@@ -762,8 +762,6 @@
 
             <!-- Right: Actions -->
             <div style="display:flex; gap:10px;">
-                <button class="action-btn" style="border-color:var(--accent); color:var(--accent)"
-                    onclick="app.run(true)"><i class="fa-solid fa-play"></i> LANCER</button>
                 <button class="action-btn btn-crisis" onclick="app.toggleCrisis()" id="btn-crisis"><i
                         class="fa-solid fa-triangle-exclamation"></i> CHAOS</button>
                 <button class="action-btn" onclick="app.showDoc()"><i class="fa-solid fa-book"></i>
@@ -1005,13 +1003,11 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
             },
 
             run(force) {
-                if (this.mode === 4 && !force) return;
-
                 const inputs = this.collectInputs();
                 let phantoms = {};
-                document.querySelectorAll('.phantom-in').forEach(i => phantoms[i.dataset.key] = parseFloat(i.value));
+                document.querySelectorAll('.phantom-in').forEach(i => phantoms[i.dataset.key] = parseFloat(i.value) || 0);
 
-                const iters = [100, 500, 3000, 10000][this.mode - 1];
+                const iters = [100, 500, 3000, 3000][this.mode - 1];
                 const countEl = document.getElementById('sim-count-val');
                 countEl.innerText = "CALCUL...";
                 countEl.style.color = "#ff0055";
