@@ -945,9 +945,43 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
             collectInputs() {
                 const age = parseInt(document.getElementById('root-age').value);
                 const gender = document.getElementById('root-sex').value;
-                let inputs = { age, gender, optimism: 5, stress_cortisol: 5 }; // Defaults
+                let inputs = { age, gender, optimism: 5, stress_cortisol: 5, bmi: 25 }; // Defaults
 
-                if (this.mode > 1) {
+                // Helper to get value securely
+                const getVal = (id) => {
+                    const el = document.querySelector(`.l1-in[data-id="${id}"]`);
+                    return el ? parseInt(el.value) : 5;
+                };
+
+                if (this.mode < 3) {
+                    // MAPPING L1/L2 (Simplifié)
+                    // 1. Stress (UI: 1=Zen, 10=Crise) -> Moteur (1=Zen, 10=Crise)
+                    // On prend une moyenne du Stress déclaré et du manque de Sommeil
+                    const s_stress = getVal('stress');
+                    const s_sleep = getVal('sleep'); // 1=Insomnie, 10=Reparateur
+                    inputs.stress_cortisol = (s_stress + (11 - s_sleep)) / 2;
+
+                    // 2. Optimisme (UI: 1=Dep, 10=Joie)
+                    // Moyenne Optimisme + Social + Finances
+                    const s_opt = getVal('opt');
+                    const s_social = getVal('social');
+                    const s_money = getVal('money');
+                    inputs.optimism = (s_opt + s_social + s_money) / 3;
+
+                    // 3. BMI (Estimation)
+                    // Alimentation (1=MacDo, 10=Sain) + Sport (1=Nul, 10=Athlète)
+                    // Score Santé (1..10). Si 10 => BMI 22. Si 1 => BMI 30.
+                    const s_food = getVal('food');
+                    const s_sport = getVal('sport');
+                    const s_health = getVal('health');
+                    const healthScore = (s_food + s_sport + s_health) / 3;
+
+                    // Mapping: 10 -> 22 (Ideal), 1 -> 32 (Surpoids/Malade)
+                    // y = a*x + b.  22 = 10a + b, 32 = 1a + b. => 9a = -10 => a = -1.11
+                    inputs.bmi = 33 - (healthScore * 1.1);
+
+                } else {
+                    // MODE L3 / L4 (Précis)
                     const getAvg = (cat) => {
                         const all = document.querySelectorAll(`.l3-in[data-cat="${cat}"]`);
                         if (all.length === 0) return 5;
