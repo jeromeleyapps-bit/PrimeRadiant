@@ -90,17 +90,12 @@ class SchrodingerEngineV3 {
             let yearlyLoss = 0;
 
             if (y < 18) {
-                // Epoque Enfance : Usure réduite de base, modulée par la qualité de l'enfance
-                // Decay physique est faible chez l'enfant (0.5 * entropy)
-                let childDecay = (state.entropy_rate * 0.4) * childhoodFactor;
-                // Le chaos est aussi filtré par la qualité de l'enfance (parents protecteurs ou non)
-                let childChaos = meanChaos * childhoodFactor;
-
-                yearlyLoss = childDecay + childChaos;
+                // Epoque Enfance (Très faible usure, forte régénération)
+                yearlyLoss = (state.entropy_rate * 0.01) * childhoodFactor;
             } else {
-                // Epoque Adulte (18 -> Age Actuel)
-                // Plein tarif : Lifestyle Actuel + Chaos Plein
-                let adultDecay = state.entropy_rate * (1 + (y / 120));
+                // Epoque Adulte (Gompertz progressif)
+                let ageFactor = Math.pow(1.03, y - 25);
+                let adultDecay = state.entropy_rate * ageFactor * 0.05;
                 yearlyLoss = adultDecay + meanChaos;
             }
 

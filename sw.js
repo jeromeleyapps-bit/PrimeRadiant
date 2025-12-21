@@ -1,4 +1,4 @@
-const CACHE_NAME = 'prime-radiant-v9.0';
+const CACHE_NAME = 'prime-radiant-v9.1';
 const ASSETS = [
     './index.html',
     './schrodinger_engine_v3.js',
