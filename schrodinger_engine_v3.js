@@ -146,7 +146,10 @@ class SchrodingerEngineV3 {
                     }
                 }
 
-                state.energy -= (decay + chaos);
+                // Divergence intrinsèque (v8.4) pour séparer les fils sur le graphique
+                let loss = (decay + chaos);
+                let divergence = 1 + (Math.random() - 0.5) * 0.015; // 1.5% de variation par an
+                state.energy -= (loss * divergence);
 
                 // Cap
                 if (state.energy > 110) state.energy = 110;
