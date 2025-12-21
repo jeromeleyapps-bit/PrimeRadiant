@@ -990,9 +990,16 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
                         let s = 0; all.forEach(i => s += parseInt(i.value));
                         return s / all.length;
                     };
-                    inputs.bmi = 22 + (10 - getAvg('bio')) * 1.5; // 10=>22 (Ideal), 1=>35.5 (Obese)
+
+                    // 1. Physique (Bio)
+                    inputs.bmi = 22 + (10 - getAvg('bio')) * 1.5;
+
+                    // 2. Stress (Pro)
                     inputs.stress_cortisol = 11 - getAvg('pro');
-                    inputs.optimism = getAvg('psy');
+
+                    // 3. Mental & Résilience (Psy + Soc + Fin)
+                    // On fusionne le psychisme, le soutien social et la sécurité matérielle
+                    inputs.optimism = (getAvg('psy') + getAvg('soc') + getAvg('fin')) / 3;
                 }
                 return inputs;
             },
