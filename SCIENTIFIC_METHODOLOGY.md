@@ -8,7 +8,14 @@ L'application Prime Radiant ne repose pas sur une approche médicale classique (
 
 ## 2. LES TROIS PILIERS MATHÉMATIQUES
 
-### A. Loi de Gompertz-Makeham (Mortalité Exponentielle)
+### A. Stratification Biologique (Segmented Aging)
+Nouveauté v9.2 : Le moteur n'applique plus une dégradation linéaire ou purement exponentielle, mais suit les "pics omiques" découverts par la recherche longévité (Stanford, 2024).
+*   **0-20 ans** : Phase de croissance. Usure négligeable (0.002).
+*   **20-44 ans** : Plateau homéostatique. Usure stable et lente.
+*   **44-60 ans** : Première transition omique (Métabolisme des lipides/alcool). Déclenchement de la courbe de Gompertz.
+*   **60+ ans** : Deuxième transition omique (Immunité/Fonction rénale). Accélération massive de l'entropie.
+
+### B. Loi de Gompertz-Makeham (Mortalité Exponentielle)
 Le moteur intègre la loi de Gompertz, qui stipule que le taux de mortalité d'un individu augmente de manière exponentielle après l'âge de 25-30 ans. 
 *   **Modélisation :** `Risk = a + b * e^(cx)`
 *   **Application v8.8 :** Le risque de dégradation double mathématiquement tous les ~10 ans de vie adulte.

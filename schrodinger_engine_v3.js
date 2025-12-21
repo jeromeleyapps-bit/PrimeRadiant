@@ -27,6 +27,20 @@ class SchrodingerEngineV3 {
         this.CHAOS_BASE = (level === 4) ? 0.5 : 0.20;
     }
 
+    // --- STRATIFICATION BIOLOGIQUE (v9.2 - Research Based) ---
+    // Le vieillissement n'est pas linéaire mais segmenté (pics à 44 et 60 ans)
+    _getAgeImpactFactor(y) {
+        if (y < 20) return 0.002; // Phase de croissance/réparation max
+        if (y < 44) return 0.015; // Plateau de l'adulte jeune
+
+        // Transition 1 (44 ans) : Accélération métabolique
+        let baseExp = Math.pow(1.06, y - 44);
+        if (y < 60) return 0.04 * baseExp;
+
+        // Transition 2 (60 ans) : Sénescence marquée
+        return 0.08 * Math.pow(1.08, y - 60) * baseExp;
+    }
+
     _initializeState() {
         let state = {
             energy: 100,
@@ -87,17 +101,10 @@ class SchrodingerEngineV3 {
         let meanChaos = 0.3 * this.CHAOS_BASE;
 
         for (let y = 0; y < ageStart; y++) {
-            let yearlyLoss = 0;
-
-            if (y < 18) {
-                // Epoque Enfance (Très faible usure, forte régénération)
-                yearlyLoss = (state.entropy_rate * 0.01) * childhoodFactor;
-            } else {
-                // Epoque Adulte (Gompertz progressif)
-                let ageFactor = Math.pow(1.03, y - 25);
-                let adultDecay = state.entropy_rate * ageFactor * 0.05;
-                yearlyLoss = adultDecay + meanChaos;
-            }
+            let impact = this._getAgeImpactFactor(y);
+            let yearlyLoss = (y < 18)
+                ? (state.entropy_rate * impact) * childhoodFactor
+                : (state.entropy_rate * impact) + meanChaos;
 
             state.energy -= yearlyLoss;
         }
@@ -133,9 +140,8 @@ class SchrodingerEngineV3 {
             sim.push({ age: age, v: state.energy });
 
             while (alive && age <= this.MAX_AGE) {
-                // 1. Dégradation (Decay) avec effet exponentiel de Gompertz
-                let ageFactor = Math.pow(1.07, age - 25); // Doublement du risque tous les ~10 ans après 25 ans
-                let decay = state.entropy_rate * ageFactor * 0.05; // Normalisation
+                // 1. Dégradation Stratifiée (v9.2 - Research Based)
+                let decay = state.entropy_rate * this._getAgeImpactFactor(age);
 
                 // 2. Chaos & Résilience (Homéostasie)
                 let rawChaos = (Math.random() - 0.25) * this.CHAOS_BASE;
