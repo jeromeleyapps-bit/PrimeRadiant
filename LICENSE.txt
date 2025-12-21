@@ -1,0 +1,17 @@
+
+COPYRIGHT (c) 2025 JÉRÔME LEY - TOUS DROITS RÉSERVÉS
+
+1. PROPRIÉTÉ INTELLECTUELLE
+L'application "Prime Radiant", incluant son code source, son moteur mathématique (SchrodingerEngine V3), son système de visualisation (RadiantVisualizer V5), et ses interfaces graphiques, est la propriété exclusive de Jérôme Ley.
+
+2. RESTRICTIONS D'UTILISATION
+Toute copie, modification, distribution, vente ou utilisation commerciale de ce logiciel, partielle ou totale, est strictement interdite sans l'autorisation écrite expresse de l'auteur.
+
+3. LICENCE D'UTILISATION (PERSONNELLE)
+L'auteur concède une licence gratuite, non exclusive et incessible pour une utilisation strictement privée et personnelle de l'application via l'interface web fournie.
+
+4. ABSENCE DE GARANTIE
+Ce logiciel est fourni "tel quel". Il s'agit d'une simulation prédictive probabiliste. L'auteur ne saurait être tenu responsable des décisions prises sur la base des résultats de cette simulation.
+
+date: 2025-12-21
+contact: via GitHub
