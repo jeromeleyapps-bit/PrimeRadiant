@@ -2,6 +2,6 @@
   {
     "action": "open_browser",
     "path": "c:/AI/Prime Radiant/index_final.html",
-    "description": "DEBUG MODE. Si ça plante encore, une popup 'Erreur Moteur' apparaîtra avec la cause exacte."
+    "description": "CRITICAL REPAIR. L'Erreur 'app.init is not a function' doit disparaître. L'application doit démarrer correctement et le bouton Rapport doit fonctionner."
   }
 ]

@@ -872,7 +872,8 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
                 this.showModal();
             },
 
-            generateReport() {
+            init() {
+                // Generate Phantoms
                 const zone = document.getElementById('phantom-zones');
 
                 // Legend
@@ -901,6 +902,12 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
                 // Bind
                 document.querySelectorAll('input, select').forEach(i => i.addEventListener('input', () => this.run(false)));
                 this.setMode(1);
+            },
+
+            generateReport() {
+                const txt = (window.generateSeldonReport && this.results) ? generateSeldonReport(this.results, this.collectInputs()) : "Veuillez attendre la fin de la simulation...";
+                document.getElementById('report-text').innerText = txt;
+                this.showModal();
             },
 
             setMode(m) {
