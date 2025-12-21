@@ -139,9 +139,7 @@ ${_analyzeWeaknesses(inputs)}
 
 --- CONCLUSION DU MOTEUR ---
 La trajectoire montre une stabilité jusqu'à ${seldonPoint} ans.
-Au-delà, la divergence stochastique augmente de 400%.
-Conseil : Renforcer le "Temple Biologique" avant 
-l'atteinte du point de rupture.
+${_generateDynamicAdvice(inputs, seldonPoint)}
 
 =========================================
     FIN DE TRANSMISSION - PRIME RADIANT    
@@ -154,17 +152,47 @@ function _analyzeStrengths(i) {
     let s = [];
     if (i.optimism > 7) s.push("- Psyché : Haur Nv. Optimisme");
     if (i.stress_cortisol < 4) s.push("- Vecteur : Stress Maîtrisé");
-    if (i.bmi > 20 && i.bmi < 25) s.push("- Temple : IMC Optimal");
-    if (s.length === 0) return "- Aucune force majeure détectée.";
+    if (i.bmi >= 18.5 && i.bmi <= 25) s.push("- Temple : IMC Optimal");
+    if (s.length === 0) return "- Profil équilibré sans pic de force.";
     return s.join("\n");
 }
 
 function _analyzeWeaknesses(i) {
     let w = [];
     if (i.stress_cortisol > 7) w.push("- Vecteur : Stress Chronique Critique");
-    if (i.optimism < 4) w.push("- Psyché : Déficit Espérance");
-    if (i.gender === 'M') w.push("- Génétique : Facteur de Risque Masculin");
+    if (i.optimism < 4) w.push("- Psyché : Déficit Espérance/Moral");
+    if (i.bmi > 28) w.push("- Temple : Surcharge Métabolique");
+    if (w.length === 0) return "- Aucune faiblesse critique majeure.";
     return w.join("\n");
+}
+
+function _generateDynamicAdvice(i, point) {
+    // Determine weakest link
+    let scores = {
+        'Bio': Math.abs(i.bmi - 22), // 0 is best
+        'Pro': i.stress_cortisol,    // 0 is best
+        'Psy': (10 - i.optimism)     // 0 is best
+    };
+
+    // Find Max Risk
+    let maxRisk = 0;
+    let category = 'Bio';
+
+    if (scores.Bio > maxRisk) { maxRisk = scores.Bio; category = 'Bio'; }
+    if (scores.Pro > maxRisk) { maxRisk = scores.Pro; category = 'Pro'; }
+    if (scores.Psy > maxRisk) { maxRisk = scores.Psy; category = 'Psy'; }
+
+    if (maxRisk < 3) {
+        return "PROFIL ELITE DETECTÉ.\nConseil : Maintenez l'homéostasie actuelle.\nVotre plus grand défi sera l'ennui.";
+    }
+
+    const advice = {
+        'Bio': "Priorité : Réduisez l'entropie métabolique.\nDormez +, Mangez mieux, Bougez.",
+        'Pro': "Priorité : Le Vecteur Travail vous consume.\nUrgence : Désengagement ou changement d'environnement.",
+        'Psy': "Priorité : La structure mentale fragilise l'ensemble.\nRenforcez le réseau social et l'Ikigai."
+    };
+
+    return `Analyse vectorielle : Facteur limitant identifié [${category}].\n${advice[category]}`;
 }
 
 window.generateSeldonReport = generateSeldonReport;

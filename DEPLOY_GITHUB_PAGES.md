@@ -51,3 +51,18 @@ Assurez-vous que votre dossier `Prime Radiant` contient bien tous les fichiers f
 3. **iOS** : Bouton Partage (Carré avec flèche) > "Sur l'écran d'accueil".
 
 ✨ **Bravo !** Vous avez maintenant l'application installée, qui fonctionne hors ligne et en plein écran.
+
+## Étape 6 : Avoir une plus belle adresse (URL)
+
+### Option A : L'adresse la plus courte (Gratuit)
+Pour avoir l'adresse `https://votre-pseudo.github.io/` (sans sous-dossier) :
+1. Créez le dépôt GitHub avec le nom exact : `votre-pseudo.github.io` (remplacez par votre vrai nom d'utilisateur).
+2. Poussez les fichiers dessus.
+3. C'est tout. GitHub détecte ce nom spécial et publie automatiquement à la racine.
+
+### Option B : Votre propre nom de domaine (Payant ~12€/an)
+Pour avoir `https://www.primeradiant.com` :
+1. Achetez le nom de domaine chez un registrar (OVH, Namecheap, Google Domains...).
+2. Dans GitHub > Settings > Pages > **Custom domain**, entrez votre domaine.
+3. GitHub vous donnera les IPs à configurer (DNS A Records) chez votre registrar.
+

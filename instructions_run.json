@@ -1,7 +1,7 @@
 [
   {
-    "action": "view_file",
-    "path": "c:/AI/Prime Radiant/DEPLOY_GITHUB_PAGES.md",
-    "description": "LISEZ LE GUIDE. J'ai renommé index_final.html en index.html pour vous faciliter la tâche. Suivez simplement les étapes git."
+    "action": "open_browser",
+    "path": "c:/AI/Prime Radiant/index_final.html",
+    "description": "DYNAMIC ADVICE. Mettez tout à 10 : Le rapport doit dire 'PROFIL ELITE'. Mettez Stress à 10 : Le rapport doit dire 'Priorité : Le Vecteur Travail vous consume'."
   }
 ]
