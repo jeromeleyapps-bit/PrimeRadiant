@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Prime Radiant | Final Architect Edition</title>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00f2ff">
+    <script>
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.error);
+    </script>
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="param_dictionary_l4.js"></script>
+    <script src="schrodinger_engine_v3.js"></script>
+    <script src="radiant_visualizer_v5.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg: #050510;
+            --panel: #0f0f15;
+            --accent: #00f2ff;
+            --border: rgba(255, 255, 255, 0.08);
+            --neon-red: #ff0055;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        aside.sidebar {
+            width: 450px;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        main.stage {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 60% 40%, #151520 0%, #050510 80%);
+            position: relative;
+        }
+
+        .identity-box {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 0;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-size: 0.7rem;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: rgba(0, 242, 255, 0.02);
+        }
+
+        .inputs-scroll {
+            flex-grow: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+        }
+
+        /* Sections Logic */
+        .section-l1,
+        .section-advanced,
+        .section-l4 {
+            display: none;
+        }
+
+        body[data-mode="1"] .section-l1 {
+            display: block;
+        }
+
+        body[data-mode="2"] .section-advanced {
+            display: block;
+        }
+
+        body[data-mode="2"] .l3-only {
+            display: none !important;
+        }
+
+        /* L2 hides groups 3,4,5 */
+
+        body[data-mode="3"] .section-advanced {
+            display: block;
+        }
+
+        body[data-mode="4"] .section-advanced {
+            display: block;
+        }
+
+        body[data-mode="4"] .section-l4 {
+            display: block;
+        }
+
+        .control-row {
+            padding: 8px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-bottom: 3px;
+        }
+
+        .control-range {
+            width: 100%;
+            cursor: pointer;
+            height: 4px;
+        }
+
+        .acc-header {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: #ddd;
+            display: flex;
+            justify-content: space-between;
+            transition: 0.2s;
+        }
+
+        .acc-header:hover {
+            background: rgba(255, 255, 255, 0.07);
+            color: #fff;
+        }
+
+        .acc-body {
+            display: none;
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 2px solid var(--accent);
+        }
+
+        .acc-body.open {
+            display: block;
+        }
+
+        .l4-panel {
+            padding: 10px;
+            border-top: 1px solid var(--border);
+            background: rgba(255, 0, 85, 0.05);
+        }
+
+        #phantom-zones {
+            display: none;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        .phantom-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            padding: 4px 0;
+            border-bottom: 1px dashed #333;
+            align-items: center;
+        }
+
+        .phantom-row input {
+            width: 50px;
+            background: #000;
+            border: 1px solid #333;
+            color: var(--accent);
+            text-align: right;
+            font-size: 0.7rem;
+        }
+
+        .top-bar {
+            height: 60px;
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            background: var(--panel);
+        }
+
+        .chart-wrapper {
+            flex-grow: 1;
+            padding: 20px;
+            position: relative;
+        }
+
+        .chart-inner {
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid #444;
+            color: #ccc;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+        }
+
+        .action-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-crisis {
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+
+        .btn-crisis:hover,
+        .btn-crisis.active {
+            background: var(--neon-red);
+            color: #fff;
+            box-shadow: 0 0 10px var(--neon-red);
+        }
+
+        /* Modal */
+        #modal-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 90;
+            display: none;
+        }
+
+        #modal-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: #111;
+            border: 1px solid var(--accent);
+            z-index: 91;
+            padding: 30px;
+            display: none;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+        }
+
+        #report-text {
+            font-family: 'Consolas', monospace;
+            color: #ccc;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body data-mode="1">
+
+    <aside class="sidebar">
+        <!-- IDENTITY -->
+        <div class="identity-box">
+            <h1 style="margin:0 0 10px 0; color:var(--accent); font-weight:200; letter-spacing:2px; font-size:1.1rem">
+                PRIME RADIANT</h1>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div><label style="font-size:0.7rem; color:#666;">ÂGE DÉPART</label><input type="number" id="root-age"
+                        value="30" min="1" max="90"
+                        style="width:100%; background:#1a1a22; border:1px solid #333; color:#fff;"></div>
+                <div><label style="font-size:0.7rem; color:#666;">GENRE</label><select id="root-sex"
+                        style="width:100%; background:#1a1a22; border:1px solid #333; color:#fff;">
+                        <option value="M">Homme</option>
+                        <option value="F">Femme</option>
+                    </select></div>
+            </div>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="app.setMode(1)">L1 INITIÉ</button>
+            <button class="tab-btn" onclick="app.setMode(2)">L2 ENCYCLO</button>
+            <button class="tab-btn" onclick="app.setMode(3)">L3 PSYCHO</button>
+            <button class="tab-btn" onclick="app.setMode(4)">L4 MULET</button>
+        </div>
+
+        <div class="inputs-scroll">
+
+            <!-- L1 VIEW -->
+            <div class="section-l1">
+                <div class="control-row">
+                    <div class="control-label">Santé Globale <span
+                            style="font-size:0.6rem; opacity:0.5">1(Mal)..10(Bien)</span></div><input type="range"
+                        class="l1-in" id="l1-health" value="5" min="1" max="10" style="width:100%">
+                </div>
+                <div class="control-row">
+                    <div class="control-label">Stress Quotidien <span
+                            style="font-size:0.6rem; opacity:0.5">1(Zen)..10(Crise)</span></div><input type="range"
+                        class="l1-in" id="l1-stress" value="5" min="1" max="10" style="width:100%">
+                </div>
+                <div class="control-row">
+                    <div class="control-label">Qualité Sommeil <span
+                            style="font-size:0.6rem; opacity:0.5">1(Insomnie)..10(Réparateur)</span></div><input
+                        type="range" class="l1-in" id="l1-sleep" value="5" min="1" max="10" style="width:100%">
+                </div>
+                <div class="control-row">
+                    <div class="control-label">Alimentation <span
+                            style="font-size:0.6rem; opacity:0.5">1(FastFood)..10(Sain)</span></div><input type="range"
+                        class="l1-in" id="l1-nutri" value="5" min="1" max="10" style="width:100%">
+                </div>
+                <div class="control-row">
+                    <div class="control-label">Activité Physique <span
+                            style="font-size:0.6rem; opacity:0.5">1(Nul)..10(Athlète)</span></div><input type="range"
+                        class="l1-in" id="l1-sport" value="5" min="1" max="10" style="width:100%">
+                </div>
+                <div class="control-row">
+                    <div class="control-label">Vie Sociale <span
+                            style="font-size:0.6rem; opacity:0.5">1(Isolé)..10(Entouré)</span></div><input type="range"
+                        class="l1-in" id="l1-soc" value="5" min="1" max="10" style="width:100%">
+                </div>
+                <div class="control-row">
+                    <div class="control-label">Finances <span
+                            style="font-size:0.6rem; opacity:0.5">1(Dettes)..10(Rente)</span></div><input type="range"
+                        class="l1-in" id="l1-fin" value="5" min="1" max="10" style="width:100%">
+                </div>
+                <div class="control-row">
+                    <div class="control-label">Optimisme <span
+                            style="font-size:0.6rem; opacity:0.5">1(Dépressif)..10(Joyeux)</span></div><input
+                        type="range" class="l1-in" id="l1-opt" value="5" min="1" max="10" style="width:100%">
+                </div>
+            </div>
+
+            <!-- L2 & L3 VIEW -->
+            <div class="section-advanced">
+
+                <!-- G1: TEMPLE -->
+                <div class="acc-header" onclick="app.tog(this)">I. Santé Biologique +</div>
+                <div class="acc-body">
+                    <div class="control-row">
+                        <div class="control-label">IMC / Poids <span
+                                style="font-size:0.6rem; opacity:0.5">1(Obèse)..10(Athlétique)</span></div><input
+                            type="range" class="l3-in" data-cat="bio" data-q="imc" value="5" min="1" max="10"
+                            style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Sucre Ajouté <span
+                                style="font-size:0.6rem; opacity:0.5">1(Coca)..10(0 Sucre)</span></div><input
+                            type="range" class="l3-in" data-cat="bio" data-q="sugar" value="5" min="1" max="10"
+                            style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Sommeil (Qualité) <span
+                                style="font-size:0.6rem; opacity:0.5">1(Mauvais)..10(Excellent)</span></div><input
+                            type="range" class="l3-in" data-cat="bio" data-q="sleep" value="5" min="1" max="10"
+                            style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Alcool (Vol) <span
+                                style="font-size:0.6rem; opacity:0.5">1(Alcolique)..10(Sobre)</span></div><input
+                            type="range" class="l3-in" data-cat="bio" data-q="alco" value="5" min="1" max="10"
+                            style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Tabac <span
+                                style="font-size:0.6rem; opacity:0.5">1(Fumeur)..10(Non)</span></div><input type="range"
+                            class="l3-in" data-cat="bio" data-q="smoke" value="10" min="1" max="10" style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Hydratation (Eau) <span
+                                style="font-size:0.6rem; opacity:0.5">1(Déshyd)..10(2L+)</span></div><input type="range"
+                            class="l3-in" data-cat="bio" data-q="water" value="5" min="1" max="10" style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Cardio (Souffle) <span
+                                style="font-size:0.6rem; opacity:0.5">1(Essoufflé)..10(Marathon)</span></div><input
+                            type="range" class="l3-in" data-cat="bio" data-q="cardio" value="5" min="1" max="10"
+                            style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Masse Musculaire <span
+                                style="font-size:0.6rem; opacity:0.5">1(Frêle)..10(Costaud)</span></div><input
+                            type="range" class="l3-in" data-cat="bio" data-q="muscle" value="5" min="1" max="10"
+                            style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Suivi Médical <span
+                                style="font-size:0.6rem; opacity:0.5">1(Jamais)..10(Régulier)</span></div><input
+                            type="range" class="l3-in" data-cat="bio" data-q="check" value="5" min="1" max="10"
+                            style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Soleil / Vitamine D <span
+                                style="font-size:0.6rem; opacity:0.5">1(Carence)..10(Optimal)</span></div><input
+                            type="range" class="l3-in" data-cat="bio" data-q="sun" value="5" min="1" max="10"
+                            style="width:100%">
+                    </div>
+                </div>
+
+                <!-- G2: VECTEUR -->
+                <div class="acc-header" onclick="app.tog(this)">II. Environnement Pro +</div>
+                <div class="acc-body">
+                    <div class="control-row">
+                        <div class="control-label">Sédentarité (Assis) <span style="font-size:0.6rem; opacity:0.5">1(Tjr
+                                Assis)..10(Debout)</span></div><input type="range" class="l3-in" data-cat="pro"
+                            value="5" min="1" max="10" style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Niveau Stress <span
+                                style="font-size:0.6rem; opacity:0.5">1(Burnout)..10(Zen)</span></div><input
+                            type="range" class="l3-in" data-cat="pro" value="5" min="1" max="10" style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Toxiques / Produits <span
+                                style="font-size:0.6rem; opacity:0.5">1(Exposé)..10(Sain)</span></div><input
+                            type="range" class="l3-in" data-cat="pro" value="10" min="1" max="10" style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Horaires Décalés <span
+                                style="font-size:0.6rem; opacity:0.5">1(Nuit)..10(Jour)</span></div><input type="range"
+                            class="l3-in" data-cat="pro" value="10" min="1" max="10" style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Sens (Ikigai) <span
+                                style="font-size:0.6rem; opacity:0.5">1(Absurde)..10(Passion)</span></div><input
+                            type="range" class="l3-in" data-cat="pro" value="5" min="1" max="10" style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Stabilité Emploi <span
+                                style="font-size:0.6rem; opacity:0.5">1(Précaire)..10(Sûr)</span></div><input
+                            type="range" class="l3-in" data-cat="pro" value="5" min="1" max="10" style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Trajet (Commute) <span
+                                style="font-size:0.6rem; opacity:0.5">1(3h+)..10(0min)</span></div><input type="range"
+                            class="l3-in" data-cat="pro" value="5" min="1" max="10" style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Autonomie <span
+                                style="font-size:0.6rem; opacity:0.5">1(Exécutant)..10(Libre)</span></div><input
+                            type="range" class="l3-in" data-cat="pro" value="5" min="1" max="10" style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Charge Mentale <span
+                                style="font-size:0.6rem; opacity:0.5">1(Saturé)..10(Calme)</span></div><input
+                            type="range" class="l3-in" data-cat="pro" value="5" min="1" max="10" style="width:100%">
+                    </div>
+                    <div class="control-row">
+                        <div class="control-label">Ambiance Chef/Équipe <span
+                                style="font-size:0.6rem; opacity:0.5">1(Toxique)..10(Top)</span></div><input
+                            type="range" class="l3-in" data-cat="pro" value="5" min="1" max="10" style="width:100%">
+                    </div>
+                </div>
+
+                <!-- L3 ONLY Groups -->
+                <div class="l3-only">
+                    <!-- G3: INTRICATION -->
+                    <div class="acc-header" onclick="app.tog(this)">III. Sphère Sociale +</div>
+                    <div class="acc-body">
+                        <div class="control-row">
+                            <div class="control-label">Vie de Couple <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Seul/Mal)..10(Heureux)</span></div><input
+                                type="range" class="l3-in" data-cat="soc" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Amis Proches <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Aucun)..10(Tribu)</span></div><input
+                                type="range" class="l3-in" data-cat="soc" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Sorties / Rencontres <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Jamais)..10(Souvent)</span></div><input
+                                type="range" class="l3-in" data-cat="soc" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Soutien Émotionnel <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Nul)..10(Solide)</span></div><input
+                                type="range" class="l3-in" data-cat="soc" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Animaux <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Non)..10(Oui)</span></div><input
+                                type="range" class="l3-in" data-cat="soc" value="1" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Relations Famille <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Conflit)..10(Paix)</span></div><input
+                                type="range" class="l3-in" data-cat="soc" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Sentiment Solitude <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Extrême)..10(Aucun)</span></div><input
+                                type="range" class="l3-in" data-cat="soc" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Bénévolat / Asso <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Non)..10(Oui)</span></div><input
+                                type="range" class="l3-in" data-cat="soc" value="1" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Voisinage <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Hostile)..10(Amical)</span></div><input
+                                type="range" class="l3-in" data-cat="soc" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Appartenance Groupe <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Exclu)..10(Inclus)</span></div><input
+                                type="range" class="l3-in" data-cat="soc" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                    </div>
+
+                    <!-- G4: PSYCHÉ -->
+                    <div class="acc-header" onclick="app.tog(this)">IV. Psychologie & Risques +</div>
+                    <div class="acc-body">
+                        <div class="control-row">
+                            <div class="control-label">Optimisme / Moral <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Noir)..10(Rose)</span></div><input
+                                type="range" class="l3-in" data-cat="psy" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Maîtrise Colère <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Explosif)..10(Calme)</span></div><input
+                                type="range" class="l3-in" data-cat="psy" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Conduite (Route) <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Danger)..10(Prudent)</span></div><input
+                                type="range" class="l3-in" data-cat="psy" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Sports Extrêmes <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Oui)..10(Non)</span></div><input
+                                type="range" class="l3-in" data-cat="psy" value="1" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Curiosité <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Fermé)..10(Ouvert)</span></div><input
+                                type="range" class="l3-in" data-cat="psy" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Méditation / Spirituel <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Rien)..10(Pratique)</span></div><input
+                                type="range" class="l3-in" data-cat="psy" value="1" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Usage Écrans <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Accro)..10(Raisonnable)</span></div><input
+                                type="range" class="l3-in" data-cat="psy" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Soif d'Apprendre <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Nulle)..10(Constante)</span></div><input
+                                type="range" class="l3-in" data-cat="psy" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Résilience <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Fragile)..10(Solide)</span></div><input
+                                type="range" class="l3-in" data-cat="psy" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Anxiété de Fond <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Panique)..10(Serein)</span></div><input
+                                type="range" class="l3-in" data-cat="psy" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                    </div>
+
+                    <!-- G5: HÉRITAGE -->
+                    <div class="acc-header" onclick="app.tog(this)">V. Patrimoine & Génétique +</div>
+                    <div class="acc-body">
+                        <div class="control-row">
+                            <div class="control-label">Longévité Parents <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Courte)..10(Longue)</span></div><input
+                                type="range" class="l3-in" data-cat="fin" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Risque Cardio (Famille) <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Elevé)..10(Nul)</span></div><input
+                                type="range" class="l3-in" data-cat="fin" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Risque Cancer (Famille) <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Elevé)..10(Nul)</span></div><input
+                                type="range" class="l3-in" data-cat="fin" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Épargne de Sécurité <span
+                                    style="font-size:0.6rem; opacity:0.5">1(0€)..10(Confort)</span></div><input
+                                type="range" class="l3-in" data-cat="fin" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Dettes / Crédits <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Lourdes)..10(Aucune)</span></div><input
+                                type="range" class="l3-in" data-cat="fin" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Propriétaire <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Non)..10(Oui)</span></div><input
+                                type="range" class="l3-in" data-cat="fin" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Salubrité Logement <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Moisis)..10(Sain)</span></div><input
+                                type="range" class="l3-in" data-cat="fin" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Nuisances Sonores <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Enfer)..10(Calme)</span></div><input
+                                type="range" class="l3-in" data-cat="fin" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Proximité Hôpital <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Loin)..10(Proche)</span></div><input
+                                type="range" class="l3-in" data-cat="fin" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                        <div class="control-row">
+                            <div class="control-label">Air / Pollution <span
+                                    style="font-size:0.6rem; opacity:0.5">1(Pollué)..10(Pur)</span></div><input
+                                type="range" class="l3-in" data-cat="fin" value="5" min="1" max="10" style="width:100%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- L4: PHANTOMS -->
+            <div class="section-l4">
+                <div class="l4-panel">
+                    <button onclick="app.togglePhantoms()"
+                        style="width:100%; border:1px solid var(--neon-red); color:var(--neon-red); background:rgba(0,0,0,0.3); padding:10px; cursor:pointer; font-weight:bold"><i
+                            class="fa-solid fa-lock-open"></i> MATRIX FANTÔME (50+)</button>
+                    <div id="phantom-zones"></div>
+                </div>
+            </div>
+
+        </div>
+    </aside>
+
+    <main class="stage">
+        <header class="top-bar">
+            <!-- Left: Info -->
+            <div style="display:flex; align-items:center;">
+                <span id="label-mode" style="font-weight:bold; color:var(--accent); font-size:0.9rem">INITIÉ</span>
+                <span
+                    style="color:#666; font-size:0.8rem; margin-left:10px; display:flex; align-items:center; gap:5px;">
+                    <i class="fa-solid fa-bolt" style="color:#ffaa00"></i> <span id="sim-count-val">50</span> Sim
+                </span>
+            </div>
+
+            <!-- Right: Actions -->
+            <div style="display:flex; gap:10px;">
+                <button class="action-btn" style="border-color:var(--accent); color:var(--accent)"
+                    onclick="app.run(true)"><i class="fa-solid fa-play"></i> LANCER</button>
+                <button class="action-btn btn-crisis" onclick="app.toggleCrisis()" id="btn-crisis"><i
+                        class="fa-solid fa-triangle-exclamation"></i> CHAOS</button>
+                <button class="action-btn" onclick="app.showDoc()"><i class="fa-solid fa-book"></i>
+                    Documentation</button>
+                <button class="action-btn" onclick="app.generateReport()"><i class="fa-solid fa-file-invoice"></i>
+                    Rapport</button>
+                <button class="action-btn" onclick="app.exportData()"><i class="fa-solid fa-download"></i>
+                    Export</button>
+            </div>
+        </header>
+
+        <div class="chart-wrapper">
+            <div class="chart-inner"><canvas id="mainChart"></canvas></div>
+        </div>
+    </main>
+
+    <!-- MODAL -->
+    <div id="modal-over" onclick="app.closeModal()"></div>
+    <div id="modal-box">
+        <span onclick="app.closeModal()"
+            style="position:absolute; top:10px; right:15px; cursor:pointer; font-size:1.5rem; color:#666">×</span>
+        <div id="report-text"></div>
+    </div>
+
+    <script>
+        // DOCUMENTATION CONTENT (Embedded for Offline/CORS Safety)
+        const README_CONTENT = `
+# IMPERIUM / PRIME RADIANT
+## Documentation Scientifique & Technique V7.2
+
+> **Modele :** Schrodinger-Seldon Hybrid V3 (Stochastic Engine)
+
+---
+
+## 1. Introduction : La Synthèse Asimov-Schrödinger
+Le projet **Prime Radiant** modélise la vie comme un **système dynamique complexe**.
+Il converge deux théories :
+1.  **Mécanique Quantique** : La vie n'est pas une ligne, mais un "Nuage de Probabilité" ($\\Psi$).
+2.  **Psychohistoire** : Nous appliquons le déterminisme statistique des masses à l'individu en simulant jusqu'à **10 000 variantes** de votre propre vie.
+
+---
+
+## 2. Modélisation Mathématique
+L'équation fondamentale d'état à l'année $t$ :
+$$ E(t+1) = E(t) - [ \\Delta S_{bio} + \\Delta S_{env} + \\xi(t) ] $$
+
+*   **$E(t)$** : Vitalité résiduelle.
+*   **$\\Delta S_{bio}$ (Entropie)** : Usure naturelle (Télomères / Genre).
+*   **$\\Delta S_{env}$ (Environnement)** : Somme pondérée des vecteurs (Stress, Tabac, Sommeil).
+*   **$\\xi(t)$ (Chaos)** : Facteur aléatoire de Planck (Accidents/Opportunités).
+
+### Méthode Monte Carlo Adaptative
+Nous ne prédisons pas l'avenir. Nous lançons l'équation massivement pour densifier la probabilité :
+*   **L1 (Initié)** : 100 Simulations (Aperçu Rapide)
+*   **L2 (Encyclo)** : 500 Simulations (Calibration)
+*   **L3 (Psycho)** : 3 000 Simulations (Standard Statistique)
+*   **L4 (Mulet)** : 10 000 Simulations (Haute Résolution)
+
+Le résultat visible est la **médiane** des avenirs les plus probables (Loi Normale).
+
+---
+
+## 3. Pertinence des Vecteurs (Le Modèle "Mulet") (L4)
+En niveau L4, le système active les **Interactions Non-Linéaires** :
+$$ \\text{Risque} = \\text{Stress} \\times \\text{Mauvais Sommeil} $$
+Un impact croisé est plus destructeur que la somme des parties.
+Nous incluons aussi les **Facteurs Fantômes** : Minoricité, Neurodivergence, Pollution, etc.
+
+---
+
+## 4. Le Facteur Chaos (Crise Seldon)
+Le bouton **CHAOS** (Triangle Rouge) introduit une instabilité majeure dans le modèle ($\\xi(t) \\times 5$).
+Il simule l'impact d'événements historiques imprévisibles (Guerres, Pandémies, Ruptures Technologiques) ou personnels majeurs.
+*   **Sans Chaos** : Évolution linéaire et stable.
+*   **Avec Chaos** : Les trajectoires divergent fortement, créant des "Ruptures de Symétrie" visibles sur le graphique.
+
+---
+
+## 5. Robustesse
+Ce modèle respecte le principe d'incertitude. Il ne vous dit pas *quand* vous finirez le jeu, mais *comment* optimiser vos chances contre l'Entropie.
+
+*Généré par l'IA AntiGravity - 2025*
+        `;
+
+        const app = {
+            mode: 1,
+            crisisMode: false,
+            vis: new RadiantVisualizerV5('mainChart'),
+            results: null,
+
+            init() {
+                // Generate Phantoms
+                const zone = document.getElementById('phantom-zones');
+
+                // Legend
+                const leg = document.createElement('div');
+                leg.style.cssText = "font-size:0.7rem; color:#888; padding:5px; margin-bottom:10px; border-bottom:1px solid #333; line-height:1.4";
+                leg.innerHTML = `
+                    <strong>ÉCART TYPE STANDARD ($\sigma$)</strong><br>
+                    <span style='color:cyan'>-1.0</span> = Déficit / Absence / Faible<br>
+                    <span style='color:#666'>0.0</span> = Moyenne Standard<br>
+                    <span style='color:orange'>+1.0</span> = Excès / Présence / Fort
+                `;
+                zone.appendChild(leg);
+
+                if (window.PARAM_DICTIONARY) {
+                    Object.keys(window.PARAM_DICTIONARY).forEach(k => {
+                        const d = window.PARAM_DICTIONARY[k];
+                        if (d.type === 'L4') {
+                            const r = document.createElement('div');
+                            r.className = 'phantom-row';
+                            r.innerHTML = `<span style="color:#666; font-size:0.6rem">L4</span> <span>${d.label.substring(0, 22)}</span> <input type="number" class="phantom-in" data-key="${k}" value="0" step="0.1" min="-1" max="1">`;
+                            zone.appendChild(r);
+                        }
+                    });
+                }
+
+                // Bind
+                document.querySelectorAll('input, select').forEach(i => i.addEventListener('input', () => this.run(false)));
+                this.setMode(1);
+            },
+
+            setMode(m) {
+                this.mode = m;
+                document.body.setAttribute('data-mode', m);
+                document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i + 1 === m));
+
+                const labels = ["INITIÉ", "ENCYCLOPÉDISTE", "PSYCHOHISTORIEN", "MULET"];
+                document.getElementById('label-mode').innerText = labels[m - 1];
+                this.run(true);
+            },
+
+            tog(h) { h.nextElementSibling.classList.toggle('open'); },
+            togglePhantoms() { const z = document.getElementById('phantom-zones'); z.style.display = z.style.display === 'block' ? 'none' : 'block'; },
+
+            toggleCrisis() {
+                this.crisisMode = !this.crisisMode;
+                const btn = document.getElementById('btn-crisis');
+                btn.classList.toggle('active', this.crisisMode);
+
+                // Visual Feedback on Chart Border
+                document.querySelector('.chart-inner').style.borderColor = this.crisisMode ? '#ff0055' : 'rgba(255,255,255,0.08)';
+                document.querySelector('.chart-inner').style.boxShadow = this.crisisMode ? '0 0 20px rgba(255,0,85,0.2)' : 'none';
+
+                this.run(true);
+            },
+
+            collectInputs() {
+                const age = parseInt(document.getElementById('root-age').value);
+                const gender = document.getElementById('root-sex').value;
+                let inputs = { age, gender, optimism: 5, stress_cortisol: 5 }; // Defaults
+
+                if (this.mode > 1) {
+                    const getAvg = (cat) => {
+                        const all = document.querySelectorAll(`.l3-in[data-cat="${cat}"]`);
+                        if (all.length === 0) return 5;
+                        let s = 0; all.forEach(i => s += parseInt(i.value));
+                        return s / all.length;
+                    };
+                    inputs.bmi = 22 + (10 - getAvg('bio')) * 1.5; // 10=>22 (Ideal), 1=>35.5 (Obese)
+                    inputs.stress_cortisol = 11 - getAvg('pro');
+                    inputs.optimism = getAvg('psy');
+                }
+                return inputs;
+            },
+
+            run(force) {
+                if (this.mode === 4 && !force) return;
+
+                const inputs = this.collectInputs();
+                let phantoms = {};
+                document.querySelectorAll('.phantom-in').forEach(i => phantoms[i.dataset.key] = parseFloat(i.value));
+
+                const iters = [100, 500, 3000, 10000][this.mode - 1];
+                const countEl = document.getElementById('sim-count-val');
+                countEl.innerText = "CALCUL...";
+                countEl.style.color = "#ff0055";
+
+                // Engine setup
+                // Handle Crisis in engine manually if needed by overriding base entropy or chaos
+                const engine = new SchrodingerEngineV3(inputs, this.mode, phantoms);
+
+                if (this.crisisMode) {
+                    engine.CHAOS_BASE = 5.0; // MASSIVE CHAOS for visibility
+                }
+
+                // Async execution to allow UI update
+                setTimeout(() => {
+                    this.results = engine.run(iters);
+                    this.vis.renderComparison(this.results);
+                    countEl.innerText = iters + " Sim";
+                    countEl.style.color = "";
+                }, 50);
+            },
+
+            showDoc() {
+                let t = README_CONTENT;
+                // Simple Markdown Parser
+                t = t.replace(/^# (.*)/gm, '<h1 style="color:var(--accent)">$1</h1>')
+                    .replace(/^## (.*)/gm, '<h2 style="border-bottom:1px solid #333; padding-bottom:5px">$1</h2>')
+                    .replace(/^### (.*)/gm, '<h3 style="color:#aaa">$1</h3>')
+                    .replace(/\*\*(.*)\*\*/gm, '<b style="color:#fff">$1</b>')
+                    .replace(/\$\$(.*)\$\$/gm, '<div style="background:#222; padding:10px; border-radius:4px; text-align:center; font-style:italic; font-family:serif">$1</div>')
+                    .replace(/^> (.*)/gm, '<blockquote style="border-left:3px solid var(--accent); padding-left:10px; color:#888">$1</blockquote>')
+                    .replace(/\n/g, '<br>');
+
+                document.getElementById('report-text').innerHTML = t;
+                this.showModal();
+            },
+
+            generateReport() {
+                const txt = (window.generateSeldonReport && this.results) ? generateSeldonReport(this.results, this.collectInputs()) : "Veuillez attendre la fin de la simulation...";
+                document.getElementById('report-text').innerText = txt;
+                this.showModal();
+            },
+
+            exportData() { console.log(this.results); alert("Données brutes exportées dans la console (F12)."); },
+
+            showModal() {
+                document.getElementById('modal-over').style.display = 'block';
+                document.getElementById('modal-box').style.display = 'block';
+            },
+            closeModal() {
+                document.getElementById('modal-over').style.display = 'none';
+                document.getElementById('modal-box').style.display = 'none';
+            }
+        };
+        window.onload = () => app.init();
+    </script>
+</body>
+
+</html>

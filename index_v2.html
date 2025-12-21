@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prime Radiant V2 | Stochastic Engine</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="schrodinger_engine_v2.js"></script>
+    <style>
+        :root {
+            --bg: #0b0c15;
+            --panel: #151621;
+            --accent: #00bcd4;
+            --danger: #ff4757;
+            --text: #c0c5ce;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Consolas', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        .control-panel {
+            background: var(--panel);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        .chart-panel {
+            background: var(--panel);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            position: relative;
+            height: 700px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        label {
+            font-size: 0.8em;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .val-display {
+            float: right;
+            color: var(--accent);
+        }
+
+        .btn {
+            width: 100%;
+            background: var(--accent);
+            color: #000;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .info-box {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(0, 188, 212, 0.1);
+            border-left: 3px solid var(--accent);
+            font-size: 0.85em;
+        }
+
+        .info-title {
+            font-weight: bold;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>PRIME RADIANT <span style="font-size:0.5em; opacity:0.5">V2.0 STOCHASTIC KERNEL</span></h1>
+
+    <div class="container">
+        <!-- CONTROLS -->
+        <div class="control-panel">
+            <div class="info-box">
+                <span class="info-title">Concept d'Entropie & Chaos</span>
+                L'entropie mesure le désordre inévitable du système biologique.
+                Le "Chaos" introduit des événements aléatoires (incertitude quantique) qui rendent chaque simulation
+                unique.
+            </div>
+
+            <form id="v2-form">
+                <label>Age de départ</label>
+                <span class="val-display" id="disp-age">30</span>
+                <input type="range" id="age" min="1" max="90" value="30"
+                    oninput="document.getElementById('disp-age').textContent = this.value">
+
+                <hr style="border-color:#333; opacity:0.3">
+
+                <label>Stress (Cortisol)</label>
+                <div style="font-size:0.7em; color:#666">Accélérateur exponentiel d'entropie</div>
+                <span class="val-display" id="disp-stress">5</span>
+                <input type="range" id="stress_cortisol" min="1" max="10" value="5"
+                    oninput="document.getElementById('disp-stress').textContent = this.value">
+
+                <label>Pessimisme vs Optimisme</label>
+                <span class="val-display" id="disp-opti">5</span>
+                <input type="range" id="optimism" min="1" max="10" value="5"
+                    oninput="document.getElementById('disp-opti').textContent = this.value">
+
+                <label>Fumeur (Chaos + Usure)</label>
+                <select id="smoker" style="width:100%; background:#222; color:#fff; padding:5px; margin-top:5px">
+                    <option value="0">Non Fumeur</option>
+                    <option value="1">Fumeur</option>
+                </select>
+
+                <br><br>
+                <label>Stabilité Financière</label>
+                <span class="val-display" id="disp-fin">5</span>
+                <input type="range" id="financial_stability" min="1" max="10" value="5"
+                    oninput="document.getElementById('disp-fin').textContent = this.value">
+
+                <button type="button" class="btn" onclick="runV2()">INITIALISER MONTE CARLO (1000)</button>
+            </form>
+        </div>
+
+        <!-- VISUALIZATION -->
+        <div class="chart-panel">
+            <canvas id="mainChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let chartInstance = null;
+
+        function runV2() {
+            // 1. Gather Inputs
+            const inputs = {
+                age: parseInt(document.getElementById('age').value),
+                stress_cortisol: parseInt(document.getElementById('stress_cortisol').value),
+                optimism: parseInt(document.getElementById('optimism').value),
+                financial_stability: parseInt(document.getElementById('financial_stability').value),
+                smoker: parseInt(document.getElementById('smoker').value)
+            };
+
+            // 2. Instantiate Engine V2
+            const engine = new SchrodingerEngineV2(inputs);
+
+            // 3. Compute
+            console.time("Simulation");
+            const result = engine.runSimulation(1000); // 1000 iterations
+            console.timeEnd("Simulation");
+
+            // 4. Render
+            renderCloud(result, inputs.age);
+        }
+
+        function renderCloud(data, startAge) {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            const simulations = data.raw_simulations; // Array of arrays [{age, v}, ...]
+
+            // Limit drawing for performance (draw 50 random paths)
+            const pathsToDraw = 50;
+            const datasets = [];
+
+            // A. Draw individual chaotic paths (The "Cloud")
+            for (let i = 0; i < pathsToDraw; i++) {
+                // Pick random sim
+                const sim = simulations[Math.floor(Math.random() * simulations.length)];
+
+                // Extract (x,y)
+                // ChartJS needs x,y struct for scatter/line with holes? 
+                // Line chart handles nulls usually. We will map to global timeline 0-120.
+                const dataPoints = sim.map(p => ({ x: p.age, y: p.v }));
+
+                datasets.push({
+                    type: 'line',
+                    data: dataPoints,
+                    borderColor: 'rgba(0, 188, 212, 0.05)', // Very faint cyan
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    fill: false,
+                    tension: 0.4
+                });
+            }
+
+            // B. Draw Average Survival Curve (aggregated data)
+            const aggData = data.aggregated_data;
+            const survivalPoints = aggData.map(d => ({ x: d.age, y: d.survivalRate }));
+
+            datasets.push({
+                type: 'line',
+                label: 'Probabilité Survie (%)',
+                data: survivalPoints,
+                borderColor: '#fff',
+                borderWidth: 2,
+                pointRadius: 0,
+                yAxisID: 'ySurvival',
+                tension: 0.1
+            });
+
+            // C. Draw Average Quality Curve
+            const qualityPoints = aggData.map(d => ({ x: d.age, y: d.avgQuality }));
+            datasets.push({
+                type: 'line',
+                label: 'Vitalité Moyenne',
+                data: qualityPoints,
+                borderColor: '#ff4757',
+                borderDash: [5, 5],
+                borderWidth: 2,
+                pointRadius: 0,
+                yAxisID: 'yVitality',
+                tension: 0.1
+            });
+
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        title: { display: true, text: 'Projection Stochastique (Monte Carlo)' }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            min: startAge,
+                            max: 120,
+                            title: { display: true, text: 'Âge' }
+                        },
+                        yVitality: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            min: 0,
+                            max: 120,
+                            title: { display: true, text: 'Vitalité/Énergie (base 100)' }
+                        },
+                        ySurvival: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            min: 0,
+                            max: 100,
+                            grid: { drawOnChartArea: false }, // only want grid lines for one axis
+                            title: { display: true, text: 'Survie (%)' }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

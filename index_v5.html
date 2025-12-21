@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Prime Radiant V5.1 | Expert Edition Full</title>
+
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="schrodinger_engine_v2.js"></script>
+    <script src="radiant_visualizer_v5.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* --- THEME EXPERT --- */
+        :root {
+            --bg: #050510;
+            --panel-bg: #0f0f15;
+            --accent: #00f2ff;
+            --accent-alt: #ffaa00;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            overflow: hidden;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* SIDEBAR (SCROLLABLE ACCORDIONS) */
+        .sidebar {
+            width: 420px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) var(--panel-bg);
+        }
+
+        .header-brand {
+            padding: 25px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .header-brand h1 {
+            margin: 0;
+            font-weight: 200;
+            color: var(--accent);
+            letter-spacing: 3px;
+            font-size: 1.4rem;
+        }
+
+        /* ACCORDIONS */
+        .group-header {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            color: #ccc;
+            transition: background 0.3s;
+        }
+
+        .group-header:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        .group-header i {
+            width: 25px;
+            color: var(--accent);
+        }
+
+        .group-content {
+            display: none;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .group-content.open {
+            display: block;
+        }
+
+        .q-row {
+            padding: 8px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .q-label {
+            font-size: 0.75rem;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .q-input {
+            width: 100%;
+            margin: 0;
+            cursor: pointer;
+            height: 10px;
+            opacity: 0.8;
+        }
+
+        .q-input:hover {
+            opacity: 1;
+        }
+
+        /* MAIN VISUALIZATION */
+        .vis-stage {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            padding: 15px 30px;
+            display: flex;
+            gap: 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--panel-bg);
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            font-weight: bold;
+        }
+
+        .btn-primary:hover {
+            background: #fff;
+        }
+
+        .btn-alt {
+            border-color: var(--accent-alt);
+            color: var(--accent-alt);
+        }
+
+        /* Chart */
+        .chart-container {
+            flex-grow: 1;
+            position: relative;
+            margin: 20px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Report Modal */
+        #report-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid var(--accent);
+            padding: 20px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 0.85rem;
+            color: var(--accent);
+            display: none;
+            z-index: 10;
+            width: 400px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Tooltip style for slider values */
+        .val-badge {
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 1. SIDEBAR: FULL 50 QUESTIONS (5 GROUPS x 10 VARIABLES) -->
+    <aside class="sidebar">
+        <div class="header-brand">
+            <h1>PRIME RADIANT</h1>
+            <div style="font-size:0.7em; opacity:0.6">V5.1 QUANTUM HORIZON</div>
+        </div>
+
+        <!-- 1. TEMPLE BIOLOGIQUE (Santé & Maintenance) -->
+        <div class="group-header" onclick="toggleGroup(this)">
+            <span><i class="fa-solid fa-heart-pulse"></i> Temple (Santé)</span> <span>+</span>
+        </div>
+        <div class="group-content">
+            <div class="q-row"><label class="q-label">IMC & Poids de Forme <span class="val-badge"
+                        id="v-imc">5</span></label><input type="range" class="inp" data-cat="bio" id="q-imc" value="5"
+                    min="1" max="10" oninput="updateVal('v-imc', this.value)"></div>
+            <div class="q-row"><label class="q-label">Consommation Sucres Ajoutés <span class="val-badge"
+                        id="v-sugar">5</span></label><input type="range" class="inp" data-cat="bio" id="q-sugar"
+                    value="5" min="1" max="10" oninput="updateVal('v-sugar', this.value)"></div>
+            <div class="q-row"><label class="q-label">Qualité du Sommeil (REM) <span class="val-badge"
+                        id="v-sleep">5</span></label><input type="range" class="inp" data-cat="bio" id="q-sleep"
+                    value="5" min="1" max="10" oninput="updateVal('v-sleep', this.value)"></div>
+            <div class="q-row"><label class="q-label">Volume Alcool Hebdo <span class="val-badge"
+                        id="v-alco">5</span></label><input type="range" class="inp" data-cat="bio" id="q-alco" value="5"
+                    min="1" max="10" oninput="updateVal('v-alco', this.value)"></div>
+            <div class="q-row"><label class="q-label">Tabagisme / Vapotage <span class="val-badge"
+                        id="v-smoke">1</span></label><input type="range" class="inp" data-cat="bio" id="q-smoke"
+                    value="1" min="1" max="10" oninput="updateVal('v-smoke', this.value)"></div>
+            <div class="q-row"><label class="q-label">Hydratation Cellulaire <span class="val-badge"
+                        id="v-water">5</span></label><input type="range" class="inp" data-cat="bio" id="q-water"
+                    value="5" min="1" max="10" oninput="updateVal('v-water', this.value)"></div>
+            <div class="q-row"><label class="q-label">Cardio (VO2 Max) <span class="val-badge"
+                        id="v-cardio">5</span></label><input type="range" class="inp" data-cat="bio" id="q-cardio"
+                    value="5" min="1" max="10" oninput="updateVal('v-cardio', this.value)"></div>
+            <div class="q-row"><label class="q-label">Densité Musculaire <span class="val-badge"
+                        id="v-muscle">5</span></label><input type="range" class="inp" data-cat="bio" id="q-muscle"
+                    value="5" min="1" max="10" oninput="updateVal('v-muscle', this.value)"></div>
+            <div class="q-row"><label class="q-label">Check-up & Prévention <span class="val-badge"
+                        id="v-check">5</span></label><input type="range" class="inp" data-cat="bio" id="q-check"
+                    value="5" min="1" max="10" oninput="updateVal('v-check', this.value)"></div>
+            <div class="q-row"><label class="q-label">Exposition Solaire / Vit D <span class="val-badge"
+                        id="v-sun">5</span></label><input type="range" class="inp" data-cat="bio" id="q-sun" value="5"
+                    min="1" max="10" oninput="updateVal('v-sun', this.value)"></div>
+        </div>
+
+        <!-- 2. VECTEUR PRO (Job & Energie) -->
+        <div class="group-header" onclick="toggleGroup(this)">
+            <span><i class="fa-solid fa-briefcase"></i> Vecteur (Travail)</span> <span>+</span>
+        </div>
+        <div class="group-content">
+            <div class="q-row"><label class="q-label">Sédentarité Posturale <span class="val-badge"
+                        id="v-sit">5</span></label><input type="range" class="inp" data-cat="pro" value="5" min="1"
+                    max="10" oninput="updateVal('v-sit', this.value)"></div>
+            <div class="q-row"><label class="q-label">Stress Perçu (Cortisol) <span class="val-badge"
+                        id="v-stressP">5</span></label><input type="range" class="inp" data-cat="pro" value="5" min="1"
+                    max="10" oninput="updateVal('v-stressP', this.value)"></div>
+            <div class="q-row"><label class="q-label">Exposition Toxiques Pro <span class="val-badge"
+                        id="v-tox">1</span></label><input type="range" class="inp" data-cat="pro" value="1" min="1"
+                    max="10" oninput="updateVal('v-tox', this.value)"></div>
+            <div class="q-row"><label class="q-label">Travail de Nuit / Décalé <span class="val-badge"
+                        id="v-night">1</span></label><input type="range" class="inp" data-cat="pro" value="1" min="1"
+                    max="10" oninput="updateVal('v-night', this.value)"></div>
+            <div class="q-row"><label class="q-label">Sentiment d'Utilité (Ikigai) <span class="val-badge"
+                        id="v-iki">5</span></label><input type="range" class="inp" data-cat="pro" value="5" min="1"
+                    max="10" oninput="updateVal('v-iki', this.value)"></div>
+            <div class="q-row"><label class="q-label">Stabilité de l'Emploi <span class="val-badge"
+                        id="v-stab">5</span></label><input type="range" class="inp" data-cat="pro" value="5" min="1"
+                    max="10" oninput="updateVal('v-stab', this.value)"></div>
+            <div class="q-row"><label class="q-label">Temps de Trajet Quotidien <span class="val-badge"
+                        id="v-commute">5</span></label><input type="range" class="inp" data-cat="pro" value="5" min="1"
+                    max="10" oninput="updateVal('v-commute', this.value)"></div>
+            <div class="q-row"><label class="q-label">Autonomie Décisionnelle <span class="val-badge"
+                        id="v-auto">5</span></label><input type="range" class="inp" data-cat="pro" value="5" min="1"
+                    max="10" oninput="updateVal('v-auto', this.value)"></div>
+            <div class="q-row"><label class="q-label">Charge Mentale <span class="val-badge"
+                        id="v-load">5</span></label><input type="range" class="inp" data-cat="pro" value="5" min="1"
+                    max="10" oninput="updateVal('v-load', this.value)"></div>
+            <div class="q-row"><label class="q-label">Conflits Hiérarchiques <span class="val-badge"
+                        id="v-boss">1</span></label><input type="range" class="inp" data-cat="pro" value="1" min="1"
+                    max="10" oninput="updateVal('v-boss', this.value)"></div>
+        </div>
+
+        <!-- 3. INTRICATION (Social & Affect) -->
+        <div class="group-header" onclick="toggleGroup(this)">
+            <span><i class="fa-solid fa-users"></i> Intrication (Social)</span> <span>+</span>
+        </div>
+        <div class="group-content">
+            <div class="q-row"><label class="q-label">Cohabitation / Couple <span class="val-badge"
+                        id="v-love">5</span></label><input type="range" class="inp" data-cat="soc" value="5" min="1"
+                    max="10" oninput="updateVal('v-love', this.value)"></div>
+            <div class="q-row"><label class="q-label">Cercle Amis Proches <span class="val-badge"
+                        id="v-friends">5</span></label><input type="range" class="inp" data-cat="soc" value="5" min="1"
+                    max="10" oninput="updateVal('v-friends', this.value)"></div>
+            <div class="q-row"><label class="q-label">Fréquence Interactions <span class="val-badge"
+                        id="v-inter">5</span></label><input type="range" class="inp" data-cat="soc" value="5" min="1"
+                    max="10" oninput="updateVal('v-inter', this.value)"></div>
+            <div class="q-row"><label class="q-label">Soutien Émotionnel Dispo <span class="val-badge"
+                        id="v-support">5</span></label><input type="range" class="inp" data-cat="soc" value="5" min="1"
+                    max="10" oninput="updateVal('v-support', this.value)"></div>
+            <div class="q-row"><label class="q-label">Animaux de Compagnie <span class="val-badge"
+                        id="v-pet">1</span></label><input type="range" class="inp" data-cat="soc" value="1" min="1"
+                    max="10" oninput="updateVal('v-pet', this.value)"></div>
+            <div class="q-row"><label class="q-label">Conflits Familiaux <span class="val-badge"
+                        id="v-famcon">1</span></label><input type="range" class="inp" data-cat="soc" value="1" min="1"
+                    max="10" oninput="updateVal('v-famcon', this.value)"></div>
+            <div class="q-row"><label class="q-label">Sentiment Solitude <span class="val-badge"
+                        id="v-lonely">1</span></label><input type="range" class="inp" data-cat="soc" value="1" min="1"
+                    max="10" oninput="updateVal('v-lonely', this.value)"></div>
+            <div class="q-row"><label class="q-label">Engagement Associatif <span class="val-badge"
+                        id="v-asso">1</span></label><input type="range" class="inp" data-cat="soc" value="1" min="1"
+                    max="10" oninput="updateVal('v-asso', this.value)"></div>
+            <div class="q-row"><label class="q-label">Qualité Voisinage <span class="val-badge"
+                        id="v-neigh">5</span></label><input type="range" class="inp" data-cat="soc" value="5" min="1"
+                    max="10" oninput="updateVal('v-neigh', this.value)"></div>
+            <div class="q-row"><label class="q-label">Activités de Groupe <span class="val-badge"
+                        id="v-grp">5</span></label><input type="range" class="inp" data-cat="soc" value="5" min="1"
+                    max="10" oninput="updateVal('v-grp', this.value)"></div>
+        </div>
+
+        <!-- 4. INCERTITUDE (Psyché & Risques) -->
+        <div class="group-header" onclick="toggleGroup(this)">
+            <span><i class="fa-solid fa-brain"></i> Incertitude (Psyché)</span> <span>+</span>
+        </div>
+        <div class="group-content">
+            <div class="q-row"><label class="q-label">Optimisme / Espoir <span class="val-badge"
+                        id="v-opt">5</span></label><input type="range" class="inp" data-cat="psy" value="5" min="1"
+                    max="10" oninput="updateVal('v-opt', this.value)"></div>
+            <div class="q-row"><label class="q-label">Gestion de la Colère <span class="val-badge"
+                        id="v-ang">5</span></label><input type="range" class="inp" data-cat="psy" value="5" min="1"
+                    max="10" oninput="updateVal('v-ang', this.value)"></div>
+            <div class="q-row"><label class="q-label">Prise de Risque (Conduite) <span class="val-badge"
+                        id="v-drive">5</span></label><input type="range" class="inp" data-cat="psy" value="5" min="1"
+                    max="10" oninput="updateVal('v-drive', this.value)"></div>
+            <div class="q-row"><label class="q-label">Sports Extrêmes <span class="val-badge"
+                        id="v-xtrem">1</span></label><input type="range" class="inp" data-cat="psy" value="1" min="1"
+                    max="10" oninput="updateVal('v-xtrem', this.value)"></div>
+            <div class="q-row"><label class="q-label">Curiosité Intellectuelle <span class="val-badge"
+                        id="v-curio">5</span></label><input type="range" class="inp" data-cat="psy" value="5" min="1"
+                    max="10" oninput="updateVal('v-curio', this.value)"></div>
+            <div class="q-row"><label class="q-label">Pratique Méditation <span class="val-badge"
+                        id="v-med">1</span></label><input type="range" class="inp" data-cat="psy" value="1" min="1"
+                    max="10" oninput="updateVal('v-med', this.value)"></div>
+            <div class="q-row"><label class="q-label">Addiction Écrans/Réseaux <span class="val-badge"
+                        id="v-scr">5</span></label><input type="range" class="inp" data-cat="psy" value="5" min="1"
+                    max="10" oninput="updateVal('v-scr', this.value)"></div>
+            <div class="q-row"><label class="q-label">Capacité d'Apprentissage <span class="val-badge"
+                        id="v-learn">5</span></label><input type="range" class="inp" data-cat="psy" value="5" min="1"
+                    max="10" oninput="updateVal('v-learn', this.value)"></div>
+            <div class="q-row"><label class="q-label">Resilience aux Chocs <span class="val-badge"
+                        id="v-res">5</span></label><input type="range" class="inp" data-cat="psy" value="5" min="1"
+                    max="10" oninput="updateVal('v-res', this.value)"></div>
+            <div class="q-row"><label class="q-label">Troubles Anxieux <span class="val-badge"
+                        id="v-anx">1</span></label><input type="range" class="inp" data-cat="psy" value="1" min="1"
+                    max="10" oninput="updateVal('v-anx', this.value)"></div>
+        </div>
+
+        <!-- 5. HÉRITAGE (Génétique & Finance) -->
+        <div class="group-header" onclick="toggleGroup(this)">
+            <span><i class="fa-solid fa-dna"></i> Héritage (Génétique)</span> <span>+</span>
+        </div>
+        <div class="group-content">
+            <div class="q-row"><label class="q-label">Longévité Grands-Parents <span class="val-badge"
+                        id="v-genlon">5</span></label><input type="range" class="inp" data-cat="fin" value="5" min="1"
+                    max="10" oninput="updateVal('v-genlon', this.value)"></div>
+            <div class="q-row"><label class="q-label">Antécédents Cardio <span class="val-badge"
+                        id="v-gencard">1</span></label><input type="range" class="inp" data-cat="fin" value="1" min="1"
+                    max="10" oninput="updateVal('v-gencard', this.value)"></div>
+            <div class="q-row"><label class="q-label">Antécédents Cancer <span class="val-badge"
+                        id="v-gencan">1</span></label><input type="range" class="inp" data-cat="fin" value="1" min="1"
+                    max="10" oninput="updateVal('v-gencan', this.value)"></div>
+            <div class="q-row"><label class="q-label">Sécurité Épargne <span class="val-badge"
+                        id="v-sav">5</span></label><input type="range" class="inp" data-cat="fin" value="5" min="1"
+                    max="10" oninput="updateVal('v-sav', this.value)"></div>
+            <div class="q-row"><label class="q-label">Dettes / Charge Mentale <span class="val-badge"
+                        id="v-debt">1</span></label><input type="range" class="inp" data-cat="fin" value="1" min="1"
+                    max="10" oninput="updateVal('v-debt', this.value)"></div>
+            <div class="q-row"><label class="q-label">Propriétaire Résidence <span class="val-badge"
+                        id="v-own">0</span></label><input type="range" class="inp" data-cat="fin" value="0" min="1"
+                    max="1" step="1" oninput="updateVal('v-own', this.value)"></div>
+            <div class="q-row"><label class="q-label">Qualité Logement <span class="val-badge"
+                        id="v-home">5</span></label><input type="range" class="inp" data-cat="fin" value="5" min="1"
+                    max="10" oninput="updateVal('v-home', this.value)"></div>
+            <div class="q-row"><label class="q-label">Exposition Bruit <span class="val-badge"
+                        id="v-noise">1</span></label><input type="range" class="inp" data-cat="fin" value="1" min="1"
+                    max="10" oninput="updateVal('v-noise', this.value)"></div>
+            <div class="q-row"><label class="q-label">Accès Soins Urgence <span class="val-badge"
+                        id="v-care">5</span></label><input type="range" class="inp" data-cat="fin" value="5" min="1"
+                    max="10" oninput="updateVal('v-care', this.value)"></div>
+            <div class="q-row"><label class="q-label">Pollution Particules <span class="val-badge"
+                        id="v-poll">1</span></label><input type="range" class="inp" data-cat="fin" value="1" min="1"
+                    max="10" oninput="updateVal('v-poll', this.value)"></div>
+        </div>
+
+    </aside>
+
+    <!-- 2. MAIN STAGE -->
+    <main class="vis-stage">
+        <nav class="top-bar">
+            <span>SCÉNARIOS :</span>
+            <button class="btn btn-alt" onclick="saveBenchmark()">1. Sauvegarder "Actuel"</button>
+            <button class="btn btn-primary" onclick="generateReport()">2. Générer Rapport Seldon</button>
+            <div style="flex-grow:1"></div>
+            <div style="font-size:0.8em; color:#666; text-align:right">
+                <i class="fa-solid fa-atom"></i> MOTEUR V2<br>800 ITÉRATIONS
+            </div>
+        </nav>
+
+        <div class="chart-container">
+            <canvas id="expertChart"></canvas>
+            <div id="report-overlay" onclick="this.style.display='none'"></div>
+        </div>
+    </main>
+
+    <script>
+        // INIT
+        const visualizer = new RadiantVisualizerV5('expertChart');
+        let currentResults = null;
+        let benchmarkResults = null;
+
+        // BIND EVENTS
+        document.querySelectorAll('.inp').forEach(el => {
+            el.addEventListener('input', runLiveSimulation);
+        });
+
+        // UTILS
+        function toggleGroup(el) {
+            const content = el.nextElementSibling;
+            content.classList.toggle('open');
+        }
+
+        function updateVal(id, val) {
+            document.getElementById(id).innerText = val;
+        }
+
+        // AGGREGATION & ENGINE
+        function runLiveSimulation() {
+            // 1. INPUT AGGREGATION (Mapping 50 questions to 6 Engine Core Variables)
+            // This is a Simplification Layer: Real app would use standard deviation logic
+
+            const getScore = (cat) => {
+                const els = document.querySelectorAll(`.inp[data-cat="${cat}"]`);
+                let sum = 0; els.forEach(e => sum += parseInt(e.value));
+                return els.length ? sum / els.length : 5;
+            };
+
+            const sBio = getScore('bio'); // 1 = Bad, 10 = Perfect
+            const sPro = getScore('pro');
+            const sSoc = getScore('soc');
+            const sPsy = getScore('psy');
+            const sFin = getScore('fin');
+
+            // 2. ENGINE MAPPER
+            // Map the 5 categories scores to the Schrodinger Engine V2 Inputs
+
+            // BMI is driven by Bio score (Inverse relation)
+            // Bio 1 -> BMI 35. Bio 10 -> BMI 21.
+            const bmi = 35 - ((sBio - 1) * 1.5);
+
+            // Stress is driven by Pro and Psy (Inverse)
+            // Pro 1 (Bad) + Psy 1 (Bad) => Stress 10.
+            // Pro 10 + Psy 10 => Stress 1.
+            const combinedStressScore = (sPro + sPsy) / 2;
+            const stress = 11 - combinedStressScore;
+
+            // Optimism is Psy
+            const optimism = sPsy;
+
+            // Financial Stability is Fin
+            const finance = sFin;
+
+            // Smoker Risk: Driven heavily by specific Smoke input if possible, else Bio avg
+            const smokeInput = document.getElementById('q-smoke');
+            const smoker = parseInt(smokeInput.value) > 2 ? 1 : 0; // >2 means active risk
+
+            const inputs = {
+                age: 30, // Default
+                stress_cortisol: stress,
+                optimism: optimism,
+                financial_stability: finance,
+                bmi: bmi,
+                smoker: smoker
+            };
+
+            // 3. RUN ENGINE
+            const engine = new SchrodingerEngineV2(inputs);
+            currentResults = engine.runSimulation(800);
+
+            // 4. RENDER V5
+            visualizer.renderComparison(currentResults, benchmarkResults);
+        }
+
+        // BENCHMARKING
+        function saveBenchmark() {
+            benchmarkResults = JSON.parse(JSON.stringify(currentResults));
+            alert("État Actuel mémorisé en référence (Ambre).");
+            runLiveSimulation();
+        }
+
+        // REPORTING
+        function generateReport() {
+            // Quick mock input reconstruction for report
+            const bio = parseFloat(document.getElementById('q-imc').value); // Just taking one as proxy
+            const inputs = { stress_cortisol: 5, bmi: 25, optimism: 5 }; // Placeholder
+
+            const text = generateSeldonReport(currentResults, inputs);
+            const overlay = document.getElementById('report-overlay');
+            overlay.innerText = text;
+            overlay.style.display = 'block';
+        }
+
+        // AUTO START
+        runLiveSimulation();
+
+    </script>
+</body>
+
+</html>

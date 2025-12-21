@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Prime Radiant V6 | Resolution Levels</title>
+    <!-- Deps -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="schrodinger_engine_v2.js"></script>
+    <script src="radiant_visualizer_v5.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* CSS Reset & Vars */
+        :root {
+            --bg: #050510;
+            --panel-bg: #0e0e16;
+            --accent: #00f2ff;
+            --accent-dim: rgba(0, 242, 255, 0.2);
+            --border: rgba(255, 255, 255, 0.08);
+            --lvl1: #a0a0a0;
+            --lvl2: #00bcd4;
+            --lvl3: #9c27b0;
+            --lvl4: #ff0055;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+            overflow: hidden;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 420px;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: hidden;
+        }
+
+        /* 1. ROOT IDENTITY (Persistant) */
+        .identity-box {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .id-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .id-group {
+            flex: 1;
+        }
+
+        .id-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .id-input {
+            width: 100%;
+            background: #1a1a25;
+            border: 1px solid #333;
+            color: #fff;
+            padding: 5px;
+            font-family: monospace;
+        }
+
+        /* 2. RESOLUTION SELECTOR (TABS) */
+        .res-selector {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .res-btn {
+            flex: 1;
+            padding: 15px 0;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .res-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .res-btn.active.l1 {
+            color: #fff;
+            border-bottom-color: var(--lvl1);
+            box-shadow: 0 4px 10px -5px var(--lvl1);
+        }
+
+        .res-btn.active.l2 {
+            color: #fff;
+            border-bottom-color: var(--lvl2);
+            box-shadow: 0 4px 10px -5px var(--lvl2);
+        }
+
+        .res-btn.active.l3 {
+            color: #fff;
+            border-bottom-color: var(--lvl3);
+            box-shadow: 0 4px 10px -5px var(--lvl3);
+        }
+
+        .res-btn.active.l4 {
+            color: #fff;
+            border-bottom-color: var(--lvl4);
+            box-shadow: 0 4px 10px -5px var(--lvl4);
+        }
+
+        /* 3. SCROLLABLE CONTENT AREA */
+        .scroll-area {
+            flex-grow: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            position: relative;
+        }
+
+        /* MODES VISIBILITY */
+        .mode-l1-only {
+            display: none;
+            padding: 20px;
+        }
+
+        /* Simple Sliders */
+        .mode-advanced {
+            display: none;
+        }
+
+        /* Accordions */
+
+        /* Dynamic Classes applied by JS to sidebar */
+        .sidebar[data-mode="1"] .mode-l1-only {
+            display: block;
+        }
+
+        .sidebar[data-mode="2"] .mode-advanced {
+            display: block;
+        }
+
+        .sidebar[data-mode="3"] .mode-advanced {
+            display: block;
+        }
+
+        .sidebar[data-mode="4"] .mode-advanced {
+            display: block;
+        }
+
+        .acc-group {
+            display: none;
+        }
+
+        /* Hidden by default */
+        /* L2 shows g1, g2 */
+        .sidebar[data-mode="2"] .g1,
+        .sidebar[data-mode="2"] .g2 {
+            display: block;
+        }
+
+        /* L3+ shows all */
+        .sidebar[data-mode="3"] .acc-group {
+            display: block;
+        }
+
+        .sidebar[data-mode="4"] .acc-group {
+            display: block;
+        }
+
+        /* ACCORDION STYLES (from V5) */
+        .group-header {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: #ccc;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .group-content {
+            display: none;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .group-content.open {
+            display: block;
+        }
+
+        .q-row {
+            padding: 8px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .q-label {
+            font-size: 0.75rem;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .inp {
+            width: 100%;
+            cursor: pointer;
+            height: 4px;
+            margin-top: 5px;
+        }
+
+        /* MAIN STAGE */
+        .stage {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: radial-gradient(circle at 70% 30%, #151525 0%, #050510 80%);
+        }
+
+        .top-hud {
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .confidence-badge {
+            font-family: monospace;
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid;
+            font-size: 0.8rem;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chart-box {
+            flex-grow: 1;
+            margin: 20px;
+            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            position: relative;
+        }
+
+        /* Loading Overlay for L4 calculation */
+        #loader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--accent);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg)
+            }
+
+            100% {
+                transform: rotate(360deg)
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar" data-mode="1">
+
+        <div class="identity-box">
+            <h1 style="margin:0; font-size:1.1rem; color:#fff; letter-spacing:2px; font-weight:200">PRIME RADIANT</h1>
+            <div class="id-row">
+                <div class="id-group">
+                    <label class="id-label">Âge Départ</label>
+                    <input type="number" id="root-age" value="30" class="id-input" oninput="runSim()">
+                </div>
+                <div class="id-group">
+                    <label class="id-label">Sexe</label>
+                    <select id="root-sex" class="id-input" onchange="runSim()">
+                        <option value="M">Homme</option>
+                        <option value="F">Femme</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEVEL SELECTOR -->
+        <div class="res-selector">
+            <button class="res-btn l1 active" onclick="setMode(1)">L1<br>Initié</button>
+            <button class="res-btn l2" onclick="setMode(2)">L2<br>Encyclo</button>
+            <button class="res-btn l3" onclick="setMode(3)">L3<br>Psycho</button>
+            <button class="res-btn l4" onclick="setMode(4)">L4<br>Mulet</button>
+        </div>
+
+        <div class="scroll-area">
+
+            <!-- MODE L1: SIMPLE SLIDERS -->
+            <div class="mode-l1-only">
+                <div style="margin-bottom:20px; font-size:0.8rem; color:#aaa">Réglages Macroscopiques</div>
+                <div class="q-row"><label class="q-label">Santé Globale</label><input type="range" class="inp"
+                        id="l1-health" value="5" min="1" max="10" oninput="runSim()"></div>
+                <div class="q-row"><label class="q-label">Stress Quotidien</label><input type="range" class="inp"
+                        id="l1-stress" value="5" min="1" max="10" oninput="runSim()"></div>
+                <div class="q-row"><label class="q-label">Qualité de Vie</label><input type="range" class="inp"
+                        id="l1-qlife" value="5" min="1" max="10" oninput="runSim()"></div>
+            </div>
+
+            <!-- MODE ADVANCED: ACCORDIONS -->
+            <div class="mode-advanced">
+
+                <!-- G1: TEMPLE -->
+                <div class="acc-group g1">
+                    <div class="group-header" onclick="toggleGrp(this)"><span><i class="fa-solid fa-heart-pulse"></i>
+                            Temple (Santé)</span>+</div>
+                    <div class="group-content">
+                        <!-- Subset of 10 for demo -->
+                        <div class="q-row"><label class="q-label">IMC / Poids</label><input type="range"
+                                class="inp sub-q" data-cat="bio" value="5" min="1" max="10"></div>
+                        <div class="q-row"><label class="q-label">Alcool / Tabac</label><input type="range"
+                                class="inp sub-q" data-cat="bio" value="5" min="1" max="10"></div>
+                        <div class="q-row"><label class="q-label">Sommeil</label><input type="range" class="inp sub-q"
+                                data-cat="bio" value="5" min="1" max="10"></div>
+                    </div>
+                </div>
+
+                <!-- G2: VECTEUR -->
+                <div class="acc-group g2">
+                    <div class="group-header" onclick="toggleGrp(this)"><span><i class="fa-solid fa-briefcase"></i>
+                            Vecteur (Travail)</span>+</div>
+                    <div class="group-content">
+                        <div class="q-row"><label class="q-label">Stress Cortisol</label><input type="range"
+                                class="inp sub-q" data-cat="pro" value="5" min="1" max="10"></div>
+                        <div class="q-row"><label class="q-label">Ikigai (Sens)</label><input type="range"
+                                class="inp sub-q" data-cat="pro" value="5" min="1" max="10"></div>
+                    </div>
+                </div>
+
+                <!-- G3: INTRICATION -->
+                <div class="acc-group g3">
+                    <div class="group-header" onclick="toggleGrp(this)"><span><i class="fa-solid fa-users"></i>
+                            Intrication (Social)</span>+</div>
+                    <div class="group-content">
+                        <div class="q-row"><label class="q-label">Cercle Amis</label><input type="range"
+                                class="inp sub-q" data-cat="soc" value="5" min="1" max="10"></div>
+                    </div>
+                </div>
+
+                <!-- G4: INCERTITUDE -->
+                <div class="acc-group g4">
+                    <div class="group-header" onclick="toggleGrp(this)"><span><i class="fa-solid fa-brain"></i>
+                            Incertitude (Psy)</span>+</div>
+                    <div class="group-content">
+                        <div class="q-row"><label class="q-label">Optimisme</label><input type="range" class="inp sub-q"
+                                data-cat="psy" value="5" min="1" max="10"></div>
+                    </div>
+                </div>
+
+                <!-- G5: HERITAGE -->
+                <div class="acc-group g5">
+                    <div class="group-header" onclick="toggleGrp(this)"><span><i class="fa-solid fa-dna"></i> Héritage
+                            (Fin/Gén)</span>+</div>
+                    <div class="group-content">
+                        <div class="q-row"><label class="q-label">Génétique</label><input type="range" class="inp sub-q"
+                                data-cat="fin" value="5" min="1" max="10"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN STAGE -->
+    <main class="stage">
+        <div class="top-hud">
+            <div id="conf-badge" class="confidence-badge" style="color:var(--lvl1); border-color:var(--lvl1)">
+                <i class="fa-solid fa-chart-simple"></i>
+                <span>CONFIDENCE: 15%</span>
+            </div>
+            <div id="sim-info" style="font-size:0.75rem; color:#666">MODE INITIÉ (50 itérations)</div>
+        </div>
+
+        <div class="chart-box">
+            <canvas id="mainChart"></canvas>
+            <div id="loader">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- 1. CONFIGURATION ---
+        const LEVELS = {
+            1: { name: "Initié", samples: 50, conf: 15, color: "#a0a0a0" },
+            2: { name: "Encyclopédiste", samples: 200, conf: 45, color: "#00bcd4" },
+            3: { name: "Psychohistorien", samples: 1000, conf: 80, color: "#9c27b0" },
+            4: { name: "Le Mulet", samples: 3000, conf: 98, color: "#ff0055" } // 3000 is safer for browser JS loop
+        };
+
+        let currentMode = 1;
+        const manager = new RadiantVisualizerV5('mainChart'); // Use V5 renderer logic (Spaghetti)
+
+        // --- 2. LOGIC ---
+        function setMode(mode) {
+            currentMode = mode;
+
+            // UI Update Sidebar
+            document.getElementById('sidebar').setAttribute('data-mode', mode);
+
+            // Buttons style
+            document.querySelectorAll('.res-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.res-btn.l${mode}`).classList.add('active');
+
+            // UI Update HUD
+            const conf = LEVELS[mode].conf;
+            const col = LEVELS[mode].color;
+            const badge = document.getElementById('conf-badge');
+            badge.style.color = col;
+            badge.style.borderColor = col;
+            badge.querySelector('span').innerText = `CONFIDENCE: ${conf}%`;
+            document.getElementById('sim-info').innerText = `MODE ${LEVELS[mode].name.toUpperCase()} (${LEVELS[mode].samples} itérations)`;
+
+            runSim();
+        }
+
+        function toggleGrp(header) {
+            header.nextElementSibling.classList.toggle('open');
+        }
+
+        async function runSim() {
+            // Show Loader if Mode 4 (Heavy)
+            if (currentMode === 4) document.getElementById('loader').style.display = 'flex';
+
+            // Allow UI to breathe before heavy calc
+            setTimeout(() => {
+                const inputs = collectInputs();
+                const engine = new SchrodingerEngineV2(inputs);
+
+                // Mode-specific Engine Tweaks
+                if (currentMode === 3) {
+                    // Interaction logic: High stress amplifies sleep impact
+                    if (inputs.stress_cortisol > 7) engine.PLANCK_CONSTANT *= 1.5;
+                }
+                if (currentMode === 4) {
+                    // Maximum Uncertainty Mode
+                    engine.PLANCK_CONSTANT *= 2.0;
+                    engine.SELDON_CRISIS_PROB = 0.02; // More accidents
+                } else {
+                    engine.SELDON_CRISIS_PROB = 0.005;
+                }
+
+                // Run Simulation
+                const samples = LEVELS[currentMode].samples;
+                const results = engine.runSimulation(samples);
+
+                // Render
+                manager.renderComparison(results);
+
+                // Hide Loader
+                if (currentMode === 4) document.getElementById('loader').style.display = 'none';
+
+            }, 50);
+        }
+
+        function collectInputs() {
+            // Root
+            const age = parseInt(document.getElementById('root-age').value);
+            const sex = document.getElementById('root-sex').value;
+
+            let inputs = { age: age, gender: sex, stress_cortisol: 5, bmi: 25, optimism: 5, financial_stability: 5 };
+
+            if (currentMode === 1) {
+                // Map from simple sliders
+                const health = parseInt(document.getElementById('l1-health').value);
+                const stress = parseInt(document.getElementById('l1-stress').value);
+
+                inputs.bmi = 30 - (health * 1.5);
+                inputs.stress_cortisol = stress;
+
+            } else {
+                // Map from advanced accordions (Aggregation)
+                const getAvg = (cat) => {
+                    // In real app, we check visibility, but here we assume hidden Inputs are default 5 or existing value
+                    const els = document.querySelectorAll(`.sub-q[data-cat="${cat}"]`);
+                    if (!els.length) return 5;
+                    let sum = 0; els.forEach(e => sum += parseInt(e.value));
+                    return sum / els.length;
+                };
+
+                const bio = getAvg('bio');
+                const pro = getAvg('pro');
+                const psy = getAvg('psy');
+
+                inputs.bmi = 30 - (bio * 1.5);
+                inputs.stress_cortisol = 11 - pro;
+                inputs.optimism = psy;
+            }
+
+            return inputs;
+        }
+
+        // --- 3. BINDINGS ---
+        document.querySelectorAll('.inp').forEach(e => e.addEventListener('input', () => {
+            if (currentMode !== 4) runSim(); // Don't auto-run heavy L4 on slide
+        }));
+
+        // Init
+        setMode(1);
+
+    </script>
+</body>
+
+</html>

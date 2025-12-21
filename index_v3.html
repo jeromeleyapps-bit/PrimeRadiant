@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Prime Radiant V3 | Density Cloud Interface</title>
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="schrodinger_engine_v2.js"></script>
+    <script src="radiant_visualizer.js"></script>
+
+    <style>
+        :root {
+            --bg: #050510;
+            --neon-blue: #00f2ff;
+            --neon-amber: #ffaa00;
+            --neon-red: #ff0055;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: 'Segoe UI', sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* SIDEBAR CONTROLS */
+        .sidebar {
+            width: 300px;
+            background: rgba(20, 20, 30, 0.8);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: var(--neon-blue);
+        }
+
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        /* MAIN CHART AREA */
+        .chart-area {
+            flex-grow: 1;
+            position: relative;
+            background: radial-gradient(circle at 50% 30%, #1a1a2e 0%, #050510 70%);
+        }
+
+        /* Markers Overlay */
+        .marker {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid;
+            padding: 5px 10px;
+            font-size: 0.7rem;
+            border-radius: 4px;
+            pointer-events: none;
+            transition: all 1.5s cubic-bezier(0.075, 0.82, 0.165, 1);
+            /* Fluid morph */
+            bottom: 10%;
+            /* Default, will be updated */
+        }
+
+        .marker-seldon {
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.2);
+        }
+
+        .marker-transition {
+            border-color: var(--neon-amber);
+            color: var(--neon-amber);
+            box-shadow: 0 0 10px rgba(255, 170, 0, 0.2);
+        }
+
+        .stat-hud {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 30px;
+        }
+
+        .hud-item {
+            text-align: right;
+        }
+
+        .hud-val {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app-container">
+        <div class="sidebar">
+            <h2>PARAMÈTRES</h2>
+            <div class="control-group">
+                <label>Stress (Cortisol) <span id="v-stress">5</span></label>
+                <input type="range" id="stress" min="1" max="10" value="5" oninput="update()">
+            </div>
+            <div class="control-group">
+                <label>Optimisme <span id="v-opti">5</span></label>
+                <input type="range" id="opti" min="1" max="10" value="5" oninput="update()">
+            </div>
+            <div class="control-group">
+                <label>Hygiène de Vie (IMC) <span id="v-bmi">22</span></label>
+                <input type="range" id="bmi" min="15" max="40" value="22" oninput="update()">
+            </div>
+            <div class="control-group">
+                <label>Stabilité Financière <span id="v-fin">5</span></label>
+                <input type="range" id="fin" min="1" max="10" value="5" oninput="update()">
+            </div>
+            <p style="font-size: 0.7rem; color: #555; margin-top: auto;">
+                Mode "Temps Réel". Le graphique se re-morphe instantanément.
+            </p>
+        </div>
+
+        <div class="chart-area">
+            <canvas id="radiantChart"></canvas>
+
+            <!-- Dynamic Markers HTML Overlay -->
+            <div id="mark-seldon" class="marker marker-seldon" style="opacity:0">
+                POINT SELDON<br><span id="val-seldon">--</span> ans
+            </div>
+            <div id="mark-trans" class="marker marker-transition" style="opacity:0">
+                TRANSITION SANTÉ<br><span id="val-trans">--</span> ans
+            </div>
+
+            <div class="stat-hud">
+                <div class="hud-item">
+                    <div class="hud-val" id="hud-survival" style="color:var(--neon-blue)">--</div>
+                    <div class="hud-label">Espérance Médiane</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Init Visualizer
+        const visualizer = new RadiantVisualizer('radiantChart');
+        let engine = null;
+
+        // Auto-Run on Load
+        window.onload = () => update();
+
+        function update() {
+            // 1. Get Values
+            const stress = parseInt(document.getElementById('stress').value);
+            const opti = parseInt(document.getElementById('opti').value);
+            const bmi = parseInt(document.getElementById('bmi').value);
+            const fin = parseInt(document.getElementById('fin').value);
+
+            // Update Labels
+            document.getElementById('v-stress').innerText = stress;
+            document.getElementById('v-opti').innerText = opti;
+            document.getElementById('v-bmi').innerText = bmi;
+            document.getElementById('v-fin').innerText = fin;
+
+            // 2. Run Engine (Fast Mode 500 sims for responsive UI)
+            // Note: We use the engine directly here for speed
+            const inputs = {
+                age: 30, // Fixed start for demo
+                stress_cortisol: stress,
+                optimism: opti,
+                financial_stability: fin,
+                bmi: bmi
+            };
+
+            // Re-instantiate engine to clean state
+            engine = new SchrodingerEngineV2(inputs);
+            const results = engine.runSimulation(500);
+
+            // 3. Render Graph (Morphing)
+            const markers = visualizer.renderRadiantGraph(results, 30);
+
+            // 4. Update HUD & Markers
+            updateMarkers(markers);
+
+            // HUD
+            const survivalMedian = results.aggregated_data.find(d => d.survivalRate <= 50)?.age || "> 100";
+            document.getElementById('hud-survival').innerText = survivalMedian + " ans";
+        }
+
+        function updateMarkers(markers) {
+            const chart = visualizer.chart;
+            const meta = chart.getDatasetMeta(0); // Get meta from Median line to map pixels
+
+            // We need to find pixel X for the age
+            // Chart.js mapping:
+            const xScale = chart.scales.x;
+
+            // Update Seldon Marker (Death Peak)
+            const elSeldon = document.getElementById('mark-seldon');
+            if (markers.seldonAge) {
+                const xPos = xScale.getPixelForValue(markers.seldonAge);
+                elSeldon.style.left = (xPos - 40) + "px"; // Centered roughly
+                elSeldon.style.bottom = "20%";
+                elSeldon.style.opacity = 1;
+                document.getElementById('val-seldon').innerText = markers.seldonAge;
+            } else {
+                elSeldon.style.opacity = 0;
+            }
+
+            // Update Transition Marker (Health < 50)
+            const elTrans = document.getElementById('mark-trans');
+            if (markers.transitionAge) {
+                const xPos = xScale.getPixelForValue(markers.transitionAge);
+                elTrans.style.left = (xPos - 50) + "px";
+                elTrans.style.bottom = "60%"; // Higher up
+                elTrans.style.opacity = 1;
+                document.getElementById('val-trans').innerText = markers.transitionAge;
+            } else {
+                elTrans.style.opacity = 0;
+            }
+        }
+    </script>
+</body>
+
+</html>

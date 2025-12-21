@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Prime Radiant V2 | Data Manager Test</title>
+    <script src="data_manager.js"></script>
+    <script src="schrodinger_engine_v2.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: #111;
+            color: #eee;
+            font-family: monospace;
+            padding: 20px;
+        }
+
+        .section {
+            border: 1px solid #333;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        h2 {
+            color: #00bcd4;
+            margin-top: 0;
+        }
+
+        .bar-container {
+            background: #333;
+            height: 10px;
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: #00bcd4;
+            width: 0%;
+            transition: width 0.5s;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #00bcd4;
+            border: none;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .log {
+            background: #000;
+            padding: 10px;
+            border: 1px solid #444;
+            height: 150px;
+            overflow-y: auto;
+            color: #0f0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>PRIME RADIANT - Module de Données & Progression</h1>
+
+    <div class="section">
+        <h2>1. Simulation Formulaire (Niveau 1 -> 2)</h2>
+        <p>Remplissez des données pour voir l'évolution de la précision.</p>
+
+        <button onclick="addRandomData(5)">+ Ajouter 5 Réponses (Initié)</button>
+        <button onclick="addRandomData(20)">+ Ajouter 20 Réponses (Encyclopédiste)</button>
+        <button onclick="resetData()">Reset Data</button>
+
+        <div style="margin-top: 20px;">
+            <label>Niveau de Complétude : <span id="comp-text">0%</span></label>
+            <div class="bar-container">
+                <div id="comp-bar" class="bar-fill"></div>
+            </div>
+            <p>Facteur d'Incertitude (Sigma) : <strong id="sigma-val">1.00</strong></p>
+            <p><i>(Plus le sigma est bas, plus le nuage de probabilité sera "fin" et précis)</i></p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>2. Data Log (Mappé & Normalisé)</h2>
+        <div id="console" class="log">Waiting for input...</div>
+    </div>
+
+    <div class="section">
+        <h2>3. Test Moteur (Live)</h2>
+        <p>Simulation rapide basée sur les données actuelles.</p>
+        <canvas id="miniChart" height="200"></canvas>
+    </div>
+
+    <script>
+        const manager = new DataManager();
+
+        // Initial Update
+        updateDisplay();
+
+        function log(msg) {
+            const el = document.getElementById('console');
+            el.innerHTML += `<div>> ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function resetData() {
+            localStorage.removeItem("PR_UserProfile");
+            location.reload();
+        }
+
+        function addRandomData(count) {
+            // Simule des réponses utilisateur
+            const fakeInputs = {};
+
+            // Dictionnaire de questions possibles fictives pour le test
+            const keys = ['age', 'smoking', 'stress_level', 'diet', 'sleep_qual', 'purpose_feeling', 'financial_stability', 'bmi', 'social', 'optimism', 'urban_pollution', 'alcohol'];
+
+            for (let i = 0; i < count; i++) {
+                // Pick random key
+                const k = keys[Math.floor(Math.random() * keys.length)];
+
+                // Generate fake value based on logic
+                if (k === 'smoking') fakeInputs[k] = Math.random() > 0.5 ? 'daily' : 'never';
+                else if (k === 'stress_level') fakeInputs[k] = Math.floor(Math.random() * 10) + 1;
+                else if (k === 'age') fakeInputs[k] = 25 + Math.floor(Math.random() * 40);
+                else fakeInputs[k] = Math.floor(Math.random() * 10); // Generic numeric
+            }
+
+            // PROCESS
+            log(`Injection de ${count} données brutes...`);
+            const normalized = manager.normalizeInputs(fakeInputs);
+            manager.save();
+
+            log("Données normalisées : " + JSON.stringify(normalized, null, 1));
+            updateDisplay();
+            runMiniSim(normalized);
+        }
+
+        function updateDisplay() {
+            const metrics = manager.getProgressionMetrics();
+
+            document.getElementById('comp-text').innerText = metrics.percent + "% (" + metrics.label + ")";
+            document.getElementById('comp-bar').style.width = metrics.percent + "%";
+            document.getElementById('sigma-val').innerText = metrics.uncertaintyFactor;
+
+            // Color change based on level
+            if (metrics.level > 1) document.getElementById('comp-bar').style.background = "#00ff88";
+        }
+
+        function runMiniSim(data) {
+            // On injecte le facteur d'incertitude calculé dans le moteur ? 
+            // Le moteur V2 calcule sa propre incertitude basée sur les inputs, 
+            // mais on peut le modifier pour accepter un multiplicateur externe global (celui du DataManager).
+
+            // Hack pour le Test: On instancie le moteur avec les données normalisées
+            const engine = new SchrodingerEngineV2(data);
+
+            // On écrase artificiellement la matrice d'incertitude si besoin ou on laisse le moteur faire.
+            // Pour la démo, visualisons juste le résultat standard.
+            const res = engine.runSimulation(200);
+
+            drawChart(res.aggregated_data);
+        }
+
+        let myChart = null;
+        function drawChart(aggData) {
+            const ctx = document.getElementById('miniChart').getContext('2d');
+            const points = aggData.map(d => ({ x: d.age, y: d.survivalRate }));
+
+            if (myChart) myChart.destroy();
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Survie (%)',
+                        data: points,
+                        borderColor: '#00bcd4',
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { type: 'linear', min: 30, max: 100 },
+                        y: { min: 0, max: 100 }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

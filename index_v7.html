@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Prime Radiant V7 | Final Calibration</title>
+    <!-- Deps -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="param_dictionary_l4.js"></script>
+    <script src="schrodinger_engine_v3.js"></script>
+    <script src="radiant_visualizer_v5.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #050510;
+            --panel: #101018;
+            --accent: #00f2ff;
+            --accent-dim: rgba(0, 242, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            overflow: hidden;
+        }
+
+        /* SIDEBAR GENERIC */
+        .sidebar {
+            background: var(--panel);
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 1. LAYER SELECTOR (TOP) */
+        .layer-tabs {
+            display: flex;
+            border-bottom: 1px solid #333;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 0;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: bold;
+            transition: 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* 2. DYNAMIC INPUT AREA */
+        .input-zone {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        /* L1: SIMPLE */
+        .l1-container {
+            display: none;
+        }
+
+        .slider-box {
+            margin-bottom: 20px;
+        }
+
+        .lbl {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .rng {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        /* L2/L3: ACCORDIONS */
+        .advanced-container {
+            display: none;
+        }
+
+        .acc-head {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 2px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .acc-body {
+            display: none;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 2px solid var(--accent);
+        }
+
+        .acc-body.open {
+            display: block;
+        }
+
+        /* L4: MATRIX VIEW */
+        .l4-matrix {
+            display: none;
+        }
+
+        .phantom-tag {
+            display: inline-block;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #444;
+            border-radius: 3px;
+            font-size: 0.6rem;
+            color: #888;
+            margin: 2px;
+        }
+
+        /* Global States */
+        body[data-lvl="1"] .l1-container {
+            display: block;
+        }
+
+        body[data-lvl="2"] .advanced-container {
+            display: block;
+        }
+
+        body[data-lvl="2"] .l3-only {
+            display: none;
+        }
+
+        /* Hide deeper cats for L2 */
+        body[data-lvl="3"] .advanced-container {
+            display: block;
+        }
+
+        body[data-lvl="4"] .advanced-container {
+            display: block;
+        }
+
+        body[data-lvl="4"] .l4-matrix {
+            display: block;
+        }
+
+        /* MAIN CHART */
+        .stage {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-wrap {
+            flex-grow: 1;
+            margin: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .hud {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #333;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .confidence {
+            color: var(--accent);
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body data-lvl="1">
+
+    <aside class="sidebar">
+        <!-- TABS -->
+        <div class="layer-tabs">
+            <button class="tab active" onclick="setLvl(1)">L1 Initié</button>
+            <button class="tab" onclick="setLvl(2)">L2 Encyclo</button>
+            <button class="tab" onclick="setLvl(3)">L3 Psycho</button>
+            <button class="tab" onclick="setLvl(4)">L4 Mulet</button>
+        </div>
+
+        <div class="input-zone">
+
+            <!-- L1 VIEW -->
+            <div class="l1-container">
+                <div style="padding:10px; color:#666; font-size:0.7rem">8 VECTEURS MACROSCOPIQUES</div>
+                <div class="slider-box">
+                    <div class="lbl">Santé Globale</div><input type="range" class="rng i-l1" id="l1-health" value="5"
+                        min="1" max="10">
+                </div>
+                <div class="slider-box">
+                    <div class="lbl">Niveau Stress</div><input type="range" class="rng i-l1" id="l1-stress" value="5"
+                        min="1" max="10">
+                </div>
+                <div class="slider-box">
+                    <div class="lbl">Optimisme</div><input type="range" class="rng i-l1" id="l1-opti" value="5" min="1"
+                        max="10">
+                </div>
+                <div class="slider-box">
+                    <div class="lbl">Stabilité Financière</div><input type="range" class="rng i-l1" id="l1-fin"
+                        value="5" min="1" max="10">
+                </div>
+                <!-- ... (Simplified list for L1) -->
+            </div>
+
+            <!-- L2/L3 VIEW -->
+            <div class="advanced-container">
+                <!-- TEMPLE -->
+                <div class="acc-head" onclick="tog(this)">Temple (Santé) +</div>
+                <div class="acc-body">
+                    <div class="slider-box">
+                        <div class="lbl">IMC</div><input type="range" class="rng i-adv" data-map="bmi" value="5" min="1"
+                            max="10">
+                    </div>
+                    <div class="slider-box">
+                        <div class="lbl">Sommeil</div><input type="range" class="rng i-adv" data-map="sleep" value="5"
+                            min="1" max="10">
+                    </div>
+                    <div class="slider-box">
+                        <div class="lbl">Sport</div><input type="range" class="rng i-adv" data-map="sport" value="5"
+                            min="1" max="10">
+                    </div>
+                </div>
+
+                <!-- VECTEUR -->
+                <div class="acc-head" onclick="tog(this)">Vecteur (Travail) +</div>
+                <div class="acc-body">
+                    <div class="slider-box">
+                        <div class="lbl">Stress Pro</div><input type="range" class="rng i-adv" data-map="stress"
+                            value="5" min="1" max="10">
+                    </div>
+                </div>
+
+                <!-- L3 ONLY CATEGORIES -->
+                <div class="l3-only">
+                    <div class="acc-head" onclick="tog(this)">Intrication (Social) +</div>
+                    <div class="acc-body">
+                        <div class="slider-box"><input type="range" class="rng i-adv" value="5"></div>
+                    </div>
+
+                    <div class="acc-head" onclick="tog(this)">Psyché (Chaos) +</div>
+                    <div class="acc-body">
+                        <div class="slider-box"><input type="range" class="rng i-adv" value="5"></div>
+                    </div>
+
+                    <div class="acc-head" onclick="tog(this)">Héritage +</div>
+                    <div class="acc-body">
+                        <div class="slider-box"><input type="range" class="rng i-adv" value="5"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- L4 EXTRA INFO -->
+            <div class="l4-matrix" style="padding:10px; border-top:1px solid #333; margin-top:20px;">
+                <div style="font-size:0.7rem; color:var(--accent); margin-bottom:10px;">VECTEURS FANTÔMES ACTIFS (AUTO)
+                </div>
+                <div id="phantom-list">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+        </div>
+    </aside>
+
+    <main class="stage">
+        <div class="hud">
+            <span id="mode-label">MODE INITIÉ (50 Sims)</span>
+            <span class="confidence" id="conf-label">CONFIANCE 15%</span>
+        </div>
+        <div class="chart-wrap">
+            <canvas id="mainChart"></canvas>
+        </div>
+    </main>
+
+    <script>
+        // INIT
+        let currentLvl = 1;
+        const visualizer = new RadiantVisualizerV5('mainChart');
+
+        // SETUP
+        function setLvl(lvl) {
+            currentLvl = lvl;
+            document.body.setAttribute('data-lvl', lvl);
+
+            // Tabs UI
+            document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i + 1 === lvl));
+
+            // HUD Update
+            const labels = ["Initié", "Encyclopédiste", "Psychohistorien", "Le Mulet"];
+            const confs = [15, 45, 85, 99];
+            document.getElementById('mode-label').innerText = `MODE ${labels[lvl - 1].toUpperCase()}`;
+            document.getElementById('conf-label').innerText = `CONFIANCE ${confs[lvl - 1]}%`;
+
+            // L4 Logic
+            if (lvl === 4) populatePhantoms();
+
+            run();
+        }
+
+        function tog(head) { head.nextElementSibling.classList.toggle('open'); }
+
+        function populatePhantoms() {
+            // Display some phantom vectors from Dictionary
+            const list = document.getElementById('phantom-list');
+            list.innerHTML = '';
+            // Pick rand 10 from dict
+            const keys = Object.keys(window.PARAM_DICTIONARY).filter(k => window.PARAM_DICTIONARY[k].type === 'L4');
+            keys.slice(0, 12).forEach(k => {
+                const tag = document.createElement('span');
+                tag.className = 'phantom-tag';
+                tag.innerText = window.PARAM_DICTIONARY[k].label;
+                list.appendChild(tag);
+            });
+        }
+
+        function run() {
+            // 1. Gather Inputs
+            // Simplified gathering for V7 demo
+            let inputs = { age: 30, gender: 'M' }; // Roots
+
+            if (currentLvl === 1) {
+                // Map L1 sliders
+                inputs.stress_cortisol = parseInt(document.getElementById('l1-stress').value);
+                // ...
+            } else {
+                // Map Advanced
+                // Simple grab of first stressors
+                const els = document.querySelectorAll('.i-adv');
+                // Mock mapping logic
+                inputs.stress_cortisol = 5; // Placeholder
+                inputs.bmi = 22;
+            }
+
+            // 2. Engine Config
+            const iterations = (currentLvl === 1) ? 50 : (currentLvl === 2) ? 200 : (currentLvl === 3) ? 1000 : 2000;
+
+            const engine = new SchrodingerEngineV3(inputs, currentLvl);
+
+            // 3. Exec
+            // Async simple timeout to allow UI refresh
+            setTimeout(() => {
+                const results = engine.run(iterations);
+
+                // 4. Render
+                // L4 uses Spaghetti (Comparison style) but here we just render one set "Live"
+                // Visualizer V5 works fine.
+                visualizer.renderComparison(results);
+            }, 10);
+        }
+
+        // AUTO START
+        populatePhantoms(); // Pre-load
+        setLvl(1); // Start at 1
+
+        // Listeners
+        document.querySelectorAll('input').forEach(i => i.addEventListener('input', run));
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Prime Radiant V4 | Encyclopedia Edition</title>
+
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="schrodinger_engine_v2.js"></script>
+    <script src="radiant_visualizer_v4.js"></script>
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* --- CORE THEME --- */
+        :root {
+            --bg: #050510;
+            --panel-bg: rgba(15, 15, 25, 0.95);
+            --neon-blue: #00f2ff;
+            --neon-amber: #ffaa00;
+            --neon-red: #ff0055;
+            --text-muted: #6c7a89;
+            --border-light: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            font-family: 'Inter', system-ui, sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #app-layout {
+            font-size: 14px;
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            height: 100vh;
+        }
+
+        /* --- SIDEBAR (ACCORDIONS) --- */
+        .sidebar {
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-light);
+            text-align: center;
+        }
+
+        .app-title {
+            font-weight: 200;
+            letter-spacing: 4px;
+            color: var(--neon-blue);
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .app-subtitle {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        .accordion-container {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding: 10px;
+        }
+
+        /* Accordion Item */
+        .acc-item {
+            margin-bottom: 10px;
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .acc-header {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .acc-header:hover {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .acc-title {
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .acc-val {
+            color: var(--neon-blue);
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+
+        .acc-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .acc-body.open {
+            max-height: 500px;
+            /* Arbitrary high enough */
+        }
+
+        .question-row {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .question-row:last-child {
+            border-bottom: none;
+        }
+
+        .q-label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+
+        .q-input {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        /* --- VISUALIZATION AREA --- */
+        .vis-area {
+            position: relative;
+            background: radial-gradient(circle at 60% 40%, #101025 0%, #050510 80%);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-wrapper {
+            flex-grow: 1;
+            position: relative;
+            margin: 20px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            /* Internal padding for markers flow */
+        }
+
+        /* Seldon Crisis Toggle */
+        .toolbar {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            z-index: 50;
+        }
+
+        .toggle-btn {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .toggle-btn:hover,
+        .toggle-btn.active {
+            background: var(--neon-red);
+            color: white;
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="app-layout">
+        <!-- 1. SIDEBAR CONFIGURATION (ACCORDIONS) -->
+        <aside class="sidebar">
+            <header class="sidebar-header">
+                <h1 class="app-title">PRIME RADIANT</h1>
+                <div class="app-subtitle">Encyclopedia Edition V4</div>
+            </header>
+
+            <div class="accordion-container">
+
+                <!-- GROUP 1: TEMPLE BIOLOGIQUE -->
+                <div class="acc-item">
+                    <div class="acc-header" onclick="toggleAcc(this)">
+                        <span class="acc-title"><i class="fa-solid fa-dna"></i> Temple Biologique</span>
+                        <span class="acc-val" id="val-bio">50%</span>
+                    </div>
+                    <div class="acc-body">
+                        <!-- Mapping: Ces inputs ajustent l'IMC et la Santé de Base -->
+                        <div class="question-row">
+                            <label class="q-label">Qualité Nutritionnelle</label>
+                            <input type="range" class="sub-q" data-target="bmi" min="1" max="10" value="5"
+                                oninput="updateSimulation()">
+                        </div>
+                        <div class="question-row">
+                            <label class="q-label">Activité Physique Hebdo</label>
+                            <input type="range" class="sub-q" data-target="bmi" min="1" max="10" value="5"
+                                oninput="updateSimulation()">
+                        </div>
+                        <div class="question-row">
+                            <label class="q-label">Qualité du Sommeil</label>
+                            <input type="range" class="sub-q" data-target="bmi" min="1" max="10" value="5"
+                                oninput="updateSimulation()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GROUP 2: VECTEUR PSYCHOLOGIQUE -->
+                <div class="acc-item">
+                    <div class="acc-header" onclick="toggleAcc(this)">
+                        <span class="acc-title"><i class="fa-solid fa-brain"></i> Vecteur Psy</span>
+                        <span class="acc-val" id="val-psy">50%</span>
+                    </div>
+                    <div class="acc-body open"> <!-- Open by default -->
+                        <div class="question-row">
+                            <label class="q-label">Niveau de Stress Perçu</label>
+                            <input type="range" class="sub-q" data-target="stress" min="1" max="10" value="5"
+                                oninput="updateSimulation()">
+                        </div>
+                        <div class="question-row">
+                            <label class="q-label">Sentiment d'Utilité (Ikigai)</label>
+                            <input type="range" class="sub-q" data-target="opti" min="1" max="10" value="5"
+                                oninput="updateSimulation()">
+                        </div>
+                        <div class="question-row">
+                            <label class="q-label">Stabilité Émotionnelle</label>
+                            <input type="range" class="sub-q" data-target="opti" min="1" max="10" value="5"
+                                oninput="updateSimulation()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GROUP 3: SOCIO-ECONOMIQUE -->
+                <div class="acc-item">
+                    <div class="acc-header" onclick="toggleAcc(this)">
+                        <span class="acc-title"><i class="fa-solid fa-city"></i> Environnement</span>
+                        <span class="acc-val" id="val-env">50%</span>
+                    </div>
+                    <div class="acc-body">
+                        <div class="question-row">
+                            <label class="q-label">Sécurité Financière</label>
+                            <input type="range" class="sub-q" data-target="fin" min="1" max="10" value="5"
+                                oninput="updateSimulation()">
+                        </div>
+                        <div class="question-row">
+                            <label class="q-label">Qualité Réseau Social</label>
+                            <input type="range" class="sub-q" data-target="fin" min="1" max="10" value="5"
+                                oninput="updateSimulation()">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- 2. VISUALIZATION MAIN -->
+        <main class="vis-area">
+            <div class="toolbar">
+                <button class="toggle-btn" onclick="triggerCrisis(this)">
+                    <i class="fa-solid fa-bolt"></i> Simuler Crise Seldon
+                </button>
+            </div>
+
+            <div class="chart-wrapper">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </main>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        // Init Managers
+        const manager = new RadiantVisualizerV4('mainChart');
+        let seldonActive = false;
+
+        // on Load
+        window.onload = () => updateSimulation();
+
+        // UI Helpers
+        function toggleAcc(header) {
+            header.nextElementSibling.classList.toggle('open');
+        }
+
+        function triggerCrisis(btn) {
+            seldonActive = !seldonActive;
+            btn.classList.toggle('active');
+            updateSimulation();
+        }
+
+        // AGGREGATION LOGIC (QUESTIONS -> ENGINE INPUTS)
+        function updateSimulation() {
+            // 1. Collect all sub-questions and aggregate into Master Vars
+            // Simple Logic: Average of inputs for each category target
+
+            const getAvg = (target) => {
+                const inputs = document.querySelectorAll(`.sub-q[data-target="${target}"]`);
+                let sum = 0;
+                inputs.forEach(i => sum += parseInt(i.value));
+                return inputs.length ? sum / inputs.length : 5;
+            };
+
+            // Calculate Masters
+            const rawStress = getAvg('stress'); // 1-10
+            const rawOpti = getAvg('opti');     // 1-10
+            const rawFin = getAvg('fin');       // 1-10
+
+            // BMI is inverse: Input "Hygiene" High = BMI Optimal (22). Low = Bad (30).
+            const rawHygiene = getAvg('bmi');
+            const calcBMI = 35 - (rawHygiene * 1.5); // Map 1->33.5, 10->20
+
+            // Update Header Values (Visual feedback)
+            document.getElementById('val-psy').innerText = Math.round((rawOpti / 10) * 100) + "%";
+            document.getElementById('val-bio').innerText = Math.round((rawHygiene / 10) * 100) + "%";
+            document.getElementById('val-env').innerText = Math.round((rawFin / 10) * 100) + "%";
+
+            // 2. Configure Engine
+            const inputs = {
+                age: 30,
+                stress_cortisol: rawStress,
+                optimism: rawOpti,
+                financial_stability: rawFin,
+                bmi: calcBMI,
+                seldonMode: seldonActive // New flag passed to hypothetical engine param
+            };
+
+            // 3. Run Engine (Local)
+            // Hack: Seldon Crisis probability boost if active
+            const engine = new SchrodingerEngineV2(inputs);
+            if (seldonActive) engine.SELDON_CRISIS_PROB = 0.05; // Boost chaos 10x for vis
+            else engine.SELDON_CRISIS_PROB = 0.005;
+
+            const results = engine.runSimulation(800);
+
+            // 4. Render V4
+            manager.renderGraph(results, 30);
+        }
+    </script>
+</body>
+
+</html>
