@@ -62,6 +62,12 @@ class SchrodingerEngineV3 {
                     state.entropy_rate += (delta * (def.impact_S * 0.5)); // 0.5 coeff d'atténuation
                 }
             });
+
+            // 3. DÉTECTION DES SYNERGIES (95% Fidelity v8.8)
+            // Si plusieurs facteurs sont dégradés, l'usure s'auto-amplifie (Non-linéarité)
+            if (state.entropy_rate > 1.3) {
+                state.entropy_rate *= 1.25; // Effet "Cocktail" explosif
+            }
         }
 
         // Correction Age de Départ (Back-Testing: Histo-Biographie v7.9)
@@ -132,20 +138,30 @@ class SchrodingerEngineV3 {
             sim.push({ age: age, v: state.energy });
 
             while (alive && age <= this.MAX_AGE) {
-                // 1. Decay
-                let decay = state.entropy_rate * (1 + (age / 120));
+                // 1. Dégradation (Decay) avec effet exponentiel de Gompertz
+                let ageFactor = Math.pow(1.07, age - 25); // Doublement du risque tous les ~10 ans après 25 ans
+                let decay = state.entropy_rate * ageFactor * 0.05; // Normalisation
 
-                // 2. Chaos
-                let chaos = (Math.random() - 0.2) * this.CHAOS_BASE;
-                if (this.inputs.mode === 'crisis') chaos = Math.abs(chaos) * 2;
+                // 2. Chaos & Résilience (Homéostasie)
+                let rawChaos = (Math.random() - 0.25) * this.CHAOS_BASE;
 
-                // 3. Bifurcation (Accidents)
+                // Effet de résilience : Le corps encaisse mieux le chaos si l'énergie est haute
+                let resilience = (state.energy > 70) ? 0.6 : (state.energy < 30 ? 1.5 : 1.0);
+                let appliedChaos = rawChaos * resilience;
+
+                if (this.inputs.mode === 'crisis') appliedChaos = Math.abs(appliedChaos) * 2.5;
+
+                // 3. Synergie & Basculement Critique
+                // Si l'énergie est trop basse, le système devient instable (Vicious Cycle)
+                let structuralWeakness = (state.energy < 40) ? 1.2 : 1.0;
+
+                // 4. Bifurcation (Accidents)
                 if (this.level === 4 && Math.random() < 0.005) {
-                    if (Math.random() > 0.1) state.energy -= (Math.random() * 25);
+                    if (Math.random() > 0.1) state.energy -= (Math.random() * 30);
                     else state.energy += (Math.random() * 10);
                 }
 
-                state.energy -= (decay + chaos);
+                state.energy -= (decay + appliedChaos) * structuralWeakness;
 
                 // Cap
                 if (state.energy > 110) state.energy = 110;
