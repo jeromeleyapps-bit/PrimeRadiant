@@ -863,7 +863,9 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
 
         const app = {
             mode: 1,
-            // ... (rest of props)
+            crisisMode: false,
+            vis: null, // Init delayed
+            results: null,
 
             // ... (rest of methods)
 
@@ -873,6 +875,11 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
             },
 
             init() {
+                // Initialize Visualizer safely
+                try {
+                    this.vis = new RadiantVisualizerV5('mainChart');
+                } catch (e) { console.error("Vis Init Fail:", e); }
+
                 // Generate Phantoms
                 const zone = document.getElementById('phantom-zones');
 
@@ -973,6 +980,9 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
                 if (this.crisisMode) {
                     engine.CHAOS_BASE = 5.0; // MASSIVE CHAOS for visibility
                 }
+
+                // Safety Re-init
+                if (!this.vis) this.vis = new RadiantVisualizerV5('mainChart');
 
                 // Async execution to allow UI update
                 setTimeout(() => {

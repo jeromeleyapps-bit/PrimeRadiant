@@ -2,6 +2,6 @@
   {
     "action": "open_browser",
     "path": "c:/AI/Prime Radiant/index_final.html",
-    "description": "CRITICAL REPAIR. L'Erreur 'app.init is not a function' doit disparaître. L'application doit démarrer correctement et le bouton Rapport doit fonctionner."
+    "description": "FINAL CHECK. L'application doit charger sans erreur. Le graphique doit s'afficher."
   }
 ]
