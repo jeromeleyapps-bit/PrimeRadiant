@@ -1007,7 +1007,7 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
                 let phantoms = {};
                 document.querySelectorAll('.phantom-in').forEach(i => phantoms[i.dataset.key] = parseFloat(i.value) || 0);
 
-                const iters = [100, 500, 3000, 3000][this.mode - 1];
+                const iters = [100, 500, 3000, 10000][this.mode - 1];
                 const countEl = document.getElementById('sim-count-val');
                 countEl.innerText = "CALCUL...";
                 countEl.style.color = "#ff0055";
