@@ -955,8 +955,8 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
                     return el ? parseInt(el.value) : 5;
                 };
 
-                if (this.mode < 3) {
-                    // MAPPING L1/L2 (Simplifié)
+                if (this.mode === 1) {
+                    // MAPPING L1 (Simplifié)
                     // 1. Stress (UI: 1=Zen, 10=Crise) -> Moteur (1=Zen, 10=Crise)
                     // On prend une moyenne du Stress déclaré et du manque de Sommeil
                     const s_stress = getVal('stress');
@@ -983,7 +983,7 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
                     inputs.bmi = 33 - (healthScore * 1.1);
 
                 } else {
-                    // MODE L3 / L4 (Précis)
+                    // MODE L2 / L3 / L4 (Précis via moyennes de catégories)
                     const getAvg = (cat) => {
                         const all = document.querySelectorAll(`.l3-in[data-cat="${cat}"]`);
                         if (all.length === 0) return 5;
