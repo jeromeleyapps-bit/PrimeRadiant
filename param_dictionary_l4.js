@@ -70,7 +70,35 @@ const PARAM_DICTIONARY = {
     "geo_health_edu": { label: "Éducation à la Santé", type: "L4", impact_S: -0.15 }, // Comportemental
     "geo_food_security": { label: "Sécurité Alimentaire", type: "L4", impact_S: -0.10 },
 
-    // ... Le moteur générera aléatoirement les autres pour atteindre 200 en simulation
+    // --- 8. DÉTERMINANTS ENVIRONNEMENTAUX INVISIBLES (v8.6 - Data INSEE/OMS) ---
+    "radon_exposure": { label: "Exposition Radon (Gaz)", type: "L4", impact_S: 0.15 }, // 2e cause cancer poumon
+    "endocrine_disruptors": { label: "Perturbateurs Endocriniens", type: "L4", impact_S: 0.12 }, // Impact hormonal/fertilité
+    "microplastics_load": { label: "Charge Microplastiques", type: "L4", impact_S: 0.08 }, // Risque vasculaire émergent
+    "indoor_voc": { label: "Pollution Intérieure (COV)", type: "L4", impact_S: 0.10 }, // Peintures/Produits ménagers
+    "light_pollution_night": { label: "Pollution Lumineuse (Nuit)", type: "L4", impact_S: 0.07 }, // Blocage mélatonine
+
+    // --- 9. NOUVEAUX RISQUES NUTRITIONNELS & SYSTÉMIQUES ---
+    "ultra_processed_food": { label: "Aliments Ultra-Transformés", type: "L4", impact_S: 0.22 }, // Risque métabolique majeur
+    "processed_meat_index": { label: "Index Viande Transformée", type: "L4", impact_S: 0.15 }, // Risque colorectal (CIRC/OMS)
+    "artificial_sweeteners": { label: "Édulcorants de Synthèse", type: "L4", impact_S: 0.10 }, // Risque cardio (NutriNet)
+    "omega_ratio": { label: "Déséquilibre Oméga 6/3", type: "L4", impact_S: 0.12 }, // Pro-inflammatoire
+    "antibiotic_resistance": { label: "Antibiorésistance Acquise", type: "L4", impact_S: 0.18 }, // Fragilité infectieuse systémique
+
+    // --- 10. MARQUEURS BIOLOGIQUES & COGNITIFS NÉGLIGÉS ---
+    "periodontal_health": { label: "Santé Parodontale", type: "L4", impact_S: -0.15 }, // Lien Cœur/Cerveau (Protecteur si 10)
+    "sleep_apnea_index": { label: "Indice Apnée du Sommeil", type: "L4", impact_S: 0.25 }, // Hypoxie nocturne (Lourd)
+    "advanced_glycation": { label: "Glycation Protéique (AGEs)", type: "L4", impact_S: 0.10 }, // Vieillissement tissulaire
+    "cognitive_reserve": { label: "Réserve Cognitive", type: "L4", impact_S: -0.20 }, // Études/Curiosité (Neuro-protecteur)
+
+    // --- 11. DÉTERMINANTS SOCIO-SYSTÉMIQUES ---
+    "financial_precariousness": { label: "Précarité Financière", type: "L4", impact_S: 0.30 }, // Stress de survie (Mortalité prématurée)
+    "social_isolation_idx": { label: "Isolement Social (Solitude)", type: "L4", impact_S: 0.25 }, // Risque équivalent tabac
+    "medical_deserts": { label: "Proximité Déserts Médicaux", type: "L4", impact_S: 0.12 }, // Retard de soin
+    "screening_access": { label: "Accès au Dépistage", type: "L4", impact_S: -0.15 }, // Diagnostic précoce (Protecteur)
+
+    // --- 12. LIFESTYLE & TRAVAIL SPÉCIFIQUE ---
+    "effort_reward_imbalance": { label: "Déséquilibre Effort/Gain", type: "L4", impact_S: 0.20 }, // Burnout / Stress moral
+    "sedentary_leisure": { label: "Sédentarité de Loisir", type: "L4", impact_S: 0.15 }, // Temps écran (hors travail)
 };
 
 window.PARAM_DICTIONARY = PARAM_DICTIONARY;
