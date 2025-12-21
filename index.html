@@ -195,6 +195,70 @@
             align-items: center;
         }
 
+        /* --- MOBILE RESPONSIVE --- */
+        @media (max-width: 850px) {
+            .app-container {
+                display: flex;
+                flex-direction: column;
+                height: auto;
+                /* Allow scroll */
+                overflow: auto;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                overflow-y: visible;
+                padding-bottom: 20px;
+            }
+
+            .main-controls {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+
+            .main-controls>div {
+                flex: 1;
+                min-width: 45%;
+            }
+
+            .stage {
+                height: 60vh;
+                /* Chart visible but smaller */
+                min-height: 400px;
+            }
+
+            .chart-wrapper {
+                padding: 10px;
+            }
+
+            /* Bigger touch targets */
+            input[type=range] {
+                height: 20px;
+            }
+
+            .action-btn {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+            }
+
+            /* Legibility */
+            body {
+                font-size: 16px;
+            }
+
+            .control-label {
+                font-size: 0.95rem;
+            }
+
+            .tab-btn {
+                font-size: 0.9rem;
+                padding: 12px;
+            }
+
+            /* Hide L4 legend on mobile to save space if needed, or make it smaller */
+        }
+
         .phantom-row input {
             width: 50px;
             background: #000;

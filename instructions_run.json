@@ -2,6 +2,6 @@
   {
     "action": "open_browser",
     "path": "c:/AI/Prime Radiant/index_final.html",
-    "description": "LEGAL CHECK. Cliquez sur le petit bouton © en haut à droite. La licence de propriété doit s'afficher."
+    "description": "MOBILE TEST. Réduisez la largeur de votre fenêtre de navigateur au minimum. L'interface doit basculer en mode vertical (scrollable) avec des gros textes lisibles."
   }
 ]
