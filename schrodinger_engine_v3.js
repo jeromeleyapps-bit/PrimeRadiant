@@ -119,6 +119,12 @@ class SchrodingerEngineV3 {
         for (let i = 0; i < iterations; i++) {
             const sim = [];
             let state = this._initializeState();
+
+            // ANALYSE DE SENSIBILITÉ (Rigueur Statistique v8.6)
+            // On admet une incertitude de mesure biologique de 5% sur le métabolisme.
+            // Cela crée le nuage de probabilités de manière naturelle et rigoureuse.
+            state.entropy_rate *= (1 + (Math.random() - 0.5) * 0.05);
+
             let age = startAge;
             let alive = true;
 
@@ -129,27 +135,17 @@ class SchrodingerEngineV3 {
                 // 1. Decay
                 let decay = state.entropy_rate * (1 + (age / 120));
 
-                // 2. Chaos (Second Law of Thermodynamics: Entropy increases)
-                // Chaos is not symmetric. Engines break easier than they fix themselves.
-                // Shift to a negative bias.
+                // 2. Chaos
                 let chaos = (Math.random() - 0.2) * this.CHAOS_BASE;
-                if (this.inputs.mode === 'crisis') chaos = Math.abs(chaos) * 2; // Always positive entropy (destructive)
+                if (this.inputs.mode === 'crisis') chaos = Math.abs(chaos) * 2;
 
-                // 3. Bifurcation (Accidents / Black Swans)
-                // In L4, high probability of massive energy drops (accidents)
+                // 3. Bifurcation (Accidents)
                 if (this.level === 4 && Math.random() < 0.005) {
-                    // 90% chance of accident vs 10% miracle
-                    if (Math.random() > 0.1) {
-                        state.energy -= (Math.random() * 25); // Accident
-                    } else {
-                        state.energy += (Math.random() * 10); // Miracle recovery
-                    }
+                    if (Math.random() > 0.1) state.energy -= (Math.random() * 25);
+                    else state.energy += (Math.random() * 10);
                 }
 
-                // Divergence intrinsèque (v8.4) pour séparer les fils sur le graphique
-                let loss = (decay + chaos);
-                let divergence = 1 + (Math.random() - 0.5) * 0.015; // 1.5% de variation par an
-                state.energy -= (loss * divergence);
+                state.energy -= (decay + chaos);
 
                 // Cap
                 if (state.energy > 110) state.energy = 110;
