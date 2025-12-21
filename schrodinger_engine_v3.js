@@ -63,20 +63,25 @@ class SchrodingerEngineV3 {
             });
         }
 
-        // Correction Age de Départ (Back-Testing)
-        // On doit simuler l'usure réelle des années passées avec le taux d'entropie actuel.
-        // Sinon, démarrer vieux donne un avantage mathématique injuste.
+        // Correction Age de Départ (Back-Testing Rigoureux)
+        // On applique strictement l'équation d'état aux années passées.
+        // E[Perte] = E[Decay] + E[Chaos]
         let ageStart = this.inputs.age || 30;
 
+        // Moyenne du Chaos (Expected Value)
+        // chaos = (Math.random() - 0.2) * BASE -> Mean is (0.5 - 0.2) * BASE = 0.3 * BASE
+        let meanChaos = 0.3 * this.CHAOS_BASE;
+
         for (let y = 0; y < ageStart; y++) {
-            // Usure historique : on considère que l'enfance/jeunesse est un peu plus résiliente (0.8)
-            // mais que l'usure s'accumule quand même. 
-            // On utilise l'entropy_rate du profil pour refléter le lifestyle "depuis toujours".
-            let pastWear = state.entropy_rate * (1 + (y / 120)) * 0.9;
-            state.energy -= pastWear;
+            // 1. Decay Standard (Identique à la boucle run)
+            let decay = state.entropy_rate * (1 + (y / 120));
+
+            // 2. Chaos Moyen (La "Taxe de vie" inévitable)
+            // On l'applique pour ne pas avantager ceux qui "sautent" les années.
+            state.energy -= (decay + meanChaos);
         }
 
-        if (state.energy < 20) state.energy = 20; // Seuil vital minimum pour garantir un début de sim
+        if (state.energy < 15) state.energy = 15; // Seuil plancher physique (Survivant de justesse)
 
         return state;
     }
