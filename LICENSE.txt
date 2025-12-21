@@ -1,5 +1,5 @@
 
-COPYRIGHT (c) 2025 JÉRÔME LEY - TOUS DROITS RÉSERVÉS
+COPYRIGHT (c) 2025 JÉRÔME LEYSSARD - TOUS DROITS RÉSERVÉS
 
 1. PROPRIÉTÉ INTELLECTUELLE
 L'application "Prime Radiant", incluant son code source, son moteur mathématique (SchrodingerEngine V3), son système de visualisation (RadiantVisualizer V5), et ses interfaces graphiques, est la propriété exclusive de Jérôme Ley.
