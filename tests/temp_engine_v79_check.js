@@ -24,7 +24,7 @@ class SchrodingerEngineV3 {
         this.BASE_ENTROPY = (inputs.gender === 'F') ? 0.95 : 1.05;
 
         // Recalibrated Chaos (v7.8) to fix pessimistic bias
-        this.CHAOS_BASE = (level === 4) ? 0.5 : 0.20;
+        this.CHAOS_BASE = (level === 4) ? 0.6 : 0.25;
     }
 
     _initializeState() {
@@ -186,4 +186,4 @@ class SchrodingerEngineV3 {
         return agg;
     }
 }
-window.SchrodingerEngineV3 = SchrodingerEngineV3;
+module.exports = SchrodingerEngineV3;

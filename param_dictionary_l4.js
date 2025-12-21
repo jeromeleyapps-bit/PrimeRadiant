@@ -58,8 +58,12 @@ const PARAM_DICTIONARY = {
     "noise_pollution": { label: "Pollution Sonore", type: "L4", impact_S: 0.12 },
     "air_quality_pm25": { label: "Particules Fines PM2.5", type: "L4", impact_S: 0.18 },
 
-    // --- 7. IMPACT GÉOGRAPHIQUE & CLIMATIQUE (L4) ---
+    // --- INPUT GÉOGRAPHIQUE & CLIMATIQUE (L4) ---
     "geo_origin": { label: "Zone Origine Privilégiée", type: "L4", impact_S: -0.15 }, // Bonus de départ
+
+    // --- HISTOIRE PERSONNELLE (New v7.9) ---
+    "childhood_quality": { label: "Enfance (Qualité 0-18)", type: "L4", impact_S: -0.30 }, // Impact majeur sur le capital de départ
+
     "geo_climate_risk": { label: "Risques Climatiques", type: "L4", impact_S: 0.25 }, // Stress catastrophe
     "geo_density": { label: "Densité / Surpop.", type: "L4", impact_S: 0.10 }, // Stress viral/psychique
     "geo_water_access": { label: "Accès Eau Potable", type: "L4", impact_S: -0.20 }, // Vital

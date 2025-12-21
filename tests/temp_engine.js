@@ -23,7 +23,8 @@ class SchrodingerEngineV3 {
         // Hommes : Usure plus rapide, plus de variance.
         this.BASE_ENTROPY = (inputs.gender === 'F') ? 0.95 : 1.05;
 
-        this.CHAOS_BASE = (level === 4) ? 0.8 : 0.5;
+        // Recalibrated Chaos (v7.8) to fix pessimistic bias
+        this.CHAOS_BASE = (level === 4) ? 0.6 : 0.25;
     }
 
     _initializeState() {
@@ -34,15 +35,15 @@ class SchrodingerEngineV3 {
 
         // 1. INPUTS L1-L3 (Mapping simplifié)
         if (this.inputs.stress_cortisol) {
-            // Stress: 1-10. 5 is neutral.
-            state.entropy_rate += (this.inputs.stress_cortisol - 5) * 0.04;
+            // Stress: 1-10. 5 is neutral. Impact Increased (0.04 -> 0.07)
+            state.entropy_rate += (this.inputs.stress_cortisol - 5) * 0.07;
         }
         if (this.inputs.bmi) {
             let dist = Math.abs(this.inputs.bmi - 22);
-            state.entropy_rate += (dist * 0.015);
+            state.entropy_rate += (dist * 0.025); // Increased weight penalty
         }
         if (this.inputs.optimism) {
-            state.entropy_rate -= (this.inputs.optimism - 5) * 0.03;
+            state.entropy_rate -= (this.inputs.optimism - 5) * 0.05; // Increased mind power
         }
 
         // 2. INPUTS L4 (PHANTOMS & MICRO-FACTEURS)
@@ -63,14 +64,27 @@ class SchrodingerEngineV3 {
             });
         }
 
-        // Correction Age de Départ
-        // Si on commence à 50 ans, l'énergie initiale n'est pas 100 !
-        // On doit simuler l'usure passée théorique
+        // Correction Age de Départ (Back-Testing Rigoureux & Calibré)
+        // On applique strictement l'équation d'état aux années passées.
+        // E[Perte] = E[Decay] + E[Chaos]
         let ageStart = this.inputs.age || 30;
-        let pastYears = ageStart;
-        // Simple linear decay proxy for past years
-        state.energy -= (pastYears * 0.5);
-        if (state.energy < 40) state.energy = 40; // Floor start vitality
+
+        // Moyenne du Chaos (Expected Value)
+        // chaos = (Math.random() - 0.2) * BASE -> Mean is (0.5 - 0.2) * BASE = 0.3 * BASE
+        let meanChaos = 0.3 * this.CHAOS_BASE;
+
+        for (let y = 0; y < ageStart; y++) {
+            // 1. Decay Standard
+            let decay = state.entropy_rate * (1 + (y / 120));
+
+            // 2. Chaos Moyen (PROTECTION ENFANCE)
+            // Avant 20 ans, le chaos (accidents de vie) est amorti par la tutelle.
+            let applicableChaos = (y < 20) ? (meanChaos * 0.2) : meanChaos;
+
+            state.energy -= (decay + applicableChaos);
+        }
+
+        if (state.energy < 15) state.energy = 15; // Seuil plancher physique (Survivant de justesse)
 
         return state;
     }
