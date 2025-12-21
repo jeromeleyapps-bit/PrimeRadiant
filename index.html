@@ -223,13 +223,23 @@
             }
 
             .stage {
-                height: 60vh;
-                /* Chart visible but smaller */
-                min-height: 400px;
+                height: 50vh;
+                /* Fixed height for mobile chart */
+                min-height: 350px;
+                display: block;
+                /* Ensure block layout */
+                margin-top: 20px;
             }
 
             .chart-wrapper {
                 padding: 10px;
+                height: 100%;
+            }
+
+            .chart-inner {
+                height: 100%;
+                /* Force fill */
+                position: relative;
             }
 
             /* Bigger touch targets */
@@ -959,10 +969,16 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
 
                 // Async execution to allow UI update
                 setTimeout(() => {
-                    this.results = engine.run(iters);
-                    this.vis.renderComparison(this.results);
-                    countEl.innerText = iters + " Sim";
-                    countEl.style.color = "";
+                    try {
+                        this.results = engine.run(iters);
+                        this.vis.renderComparison(this.results);
+                        countEl.innerText = iters + " Sim";
+                        countEl.style.color = "";
+                    } catch (e) {
+                        console.error("Simulation Crash:", e);
+                        countEl.innerText = "ERREUR !";
+                        alert("Erreur Moteur: " + e.message);
+                    }
                 }, 50);
             },
 
