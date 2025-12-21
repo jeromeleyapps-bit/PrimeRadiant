@@ -696,6 +696,7 @@
                     Rapport</button>
                 <button class="action-btn" onclick="app.exportData()"><i class="fa-solid fa-download"></i>
                     Export</button>
+                <button class="action-btn" onclick="app.showLegal()"><i class="fa-solid fa-copyright"></i></button>
             </div>
         </header>
 
@@ -772,14 +773,32 @@ Ce modèle respecte le principe d'incertitude. Il ne vous dit pas *quand* vous f
 *Généré par l'IA AntiGravity - 2025*
         `;
 
+        const LICENSE_CONTENT = `
+COPYRIGHT (c) 2025 JÉRÔME LEYSSARD
+TOUS DROITS RÉSERVÉS
+
+1. PROPRIÉTÉ
+"Prime Radiant", son moteur (Schrodinger V3) et ses visuels sont la propriété exclusive de l'auteur.
+
+2. INTERDICTIONS
+Copie, modification et usage commercial interdits sans accord.
+
+3. RESPONSABILITÉ
+Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
+`;
+
         const app = {
             mode: 1,
-            crisisMode: false,
-            vis: new RadiantVisualizerV5('mainChart'),
-            results: null,
+            // ... (rest of props)
 
-            init() {
-                // Generate Phantoms
+            // ... (rest of methods)
+
+            showLegal() {
+                document.getElementById('report-text').innerText = LICENSE_CONTENT;
+                this.showModal();
+            },
+
+            generateReport() {
                 const zone = document.getElementById('phantom-zones');
 
                 // Legend
@@ -904,7 +923,17 @@ Ce modèle respecte le principe d'incertitude. Il ne vous dit pas *quand* vous f
                 this.showModal();
             },
 
-            exportData() { console.log(this.results); alert("Données brutes exportées dans la console (F12)."); },
+            exportData() {
+                if (!this.results) { alert("Aucune simulation à exporter."); return; }
+
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.results, null, 2));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "prime_radiant_export_" + new Date().toISOString().slice(0, 10) + ".json");
+                document.body.appendChild(downloadAnchorNode); // required for firefox
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            },
 
             showModal() {
                 document.getElementById('modal-over').style.display = 'block';
