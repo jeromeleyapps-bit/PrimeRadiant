@@ -63,14 +63,20 @@ class SchrodingerEngineV3 {
             });
         }
 
-        // Correction Age de Départ
-        // Si on commence à 50 ans, l'énergie initiale n'est pas 100 !
-        // On doit simuler l'usure passée théorique
+        // Correction Age de Départ (Back-Testing)
+        // On doit simuler l'usure réelle des années passées avec le taux d'entropie actuel.
+        // Sinon, démarrer vieux donne un avantage mathématique injuste.
         let ageStart = this.inputs.age || 30;
-        let pastYears = ageStart;
-        // Simple linear decay proxy for past years
-        state.energy -= (pastYears * 0.5);
-        if (state.energy < 40) state.energy = 40; // Floor start vitality
+
+        for (let y = 0; y < ageStart; y++) {
+            // Usure historique : on considère que l'enfance/jeunesse est un peu plus résiliente (0.8)
+            // mais que l'usure s'accumule quand même. 
+            // On utilise l'entropy_rate du profil pour refléter le lifestyle "depuis toujours".
+            let pastWear = state.entropy_rate * (1 + (y / 120)) * 0.9;
+            state.energy -= pastWear;
+        }
+
+        if (state.energy < 20) state.energy = 20; // Seuil vital minimum pour garantir un début de sim
 
         return state;
     }
