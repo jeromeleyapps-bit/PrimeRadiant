@@ -20,6 +20,9 @@ self.addEventListener('install', (e) => {
 
 // 2. FETCH (Mode Hors Ligne)
 self.addEventListener('fetch', (e) => {
+    // Ignorer les requêtes non-HTTP (ex: chrome-extension, file, etc.)
+    if (!e.request.url.startsWith('http')) return;
+
     e.respondWith(
         caches.match(e.request).then((r) => {
             console.log('[Service Worker] Fetching resource: ' + e.request.url);

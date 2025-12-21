@@ -696,8 +696,7 @@
                     Rapport</button>
                 <button class="action-btn" onclick="app.exportData()"><i class="fa-solid fa-download"></i>
                     Export</button>
-                <button class="action-btn" onclick="app.showLegal()" style="border-color:#444; color:#666"><i
-                        class="fa-solid fa-copyright"></i></button>
+                <button class="action-btn" onclick="app.showLegal()"><i class="fa-solid fa-copyright"></i></button>
             </div>
         </header>
 
@@ -924,7 +923,17 @@ Logiciel de simulation probabiliste fourni "tel quel" sans garantie.
                 this.showModal();
             },
 
-            exportData() { console.log(this.results); alert("Données brutes exportées dans la console (F12)."); },
+            exportData() {
+                if (!this.results) { alert("Aucune simulation à exporter."); return; }
+
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.results, null, 2));
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", dataStr);
+                downloadAnchorNode.setAttribute("download", "prime_radiant_export_" + new Date().toISOString().slice(0, 10) + ".json");
+                document.body.appendChild(downloadAnchorNode); // required for firefox
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+            },
 
             showModal() {
                 document.getElementById('modal-over').style.display = 'block';
